@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+.eggs/
+.pytest_cache/
+.venv/
+.venv*/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data & model (jangan pernah di-commit)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+models/*
+!models/.gitkeep
+out/*
+!out/.gitkeep
+
+# Frontend (interface/)
+node_modules/
+interface/dist/
+
+# Secrets & OS
+.env
+.env.*
+.DS_Store
