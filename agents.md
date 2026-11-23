@@ -26,6 +26,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 - Wajib: `export PYTORCH_ENABLE_MPS_FALLBACK=1` saat training/inference di Mac.
 - Versi minimum: Python ≥ 3.10, `transformers` ≥ 4.46, Node ≥ 18 (frontend).
 - Verifikasi MPS: `python -c "import torch; print(torch.backends.mps.is_available())"` harus `True`.
+- Colab (opsional): GPU T4 memakai CUDA. Di sana `fp16` otomatis aktif dan `num_workers=2`; panduan ada di `docs/colab.md`.
 
 ## 3. Struktur repo
 
@@ -35,6 +36,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── README.md
 ├── pyproject.toml
 ├── agent/              # skills.md (cara kerja) + memory.md (log keputusan), di-commit
+├── docs/               # dataset.md (lisensi/skema) + colab.md (panduan training)
 ├── data/
 │   ├── raw/            # dataset asli, read-only, gitignored
 │   ├── processed/      # train/val/test.csv, gitignored
@@ -42,10 +44,12 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── notebooks/          # eksplorasi & laporan, bernomor
 ├── src/cyberbully/     # semua logika reusable
 │   ├── config.py       # path, nama model, konstanta
-│   ├── preprocess.py   # normalize_text
-│   ├── data.py         # load, prepare, split
+│   ├── preprocess.py   # normalize_text + repair escape
+│   ├── data.py         # load, encoding, map label, dedup, split
+│   ├── runtime.py      # device auto (CUDA/MPS/CPU), seed, workers
+│   ├── metrics.py      # metrik biner + threshold dari validation
 │   ├── train.py        # fine-tuning (HF Trainer)
-│   ├── evaluate.py     # metrik test set + eval set manual
+│   ├── evaluate.py     # metrik val/test + eval set manual
 │   └── predict.py      # Predictor (dipakai API & notebook)
 ├── scripts/            # utilitas CLI sekali pakai
 ├── api/                # FastAPI: POST /predict, GET /health
@@ -66,18 +70,21 @@ Aturan penempatan:
 # setup (sekali)
 pip install -e ".[api,dev]"
 
-# data
-python -m cyberbully.data --input data/raw/<file> \
-    --text-col <kolom_teks> --label-col <kolom_label> [--positive <nilai_bully> ...]
+# data (contoh dataset proyek; lihat docs/dataset.md)
+python -m cyberbully.data --input data/raw/re_dataset.csv \
+    --text-col Tweet --label-col HS Abusive --positive 1 --label-mode any \
+    --keep-cols HS Abusive
 
-# training (debug cepat dulu, baru penuh)
-python -m cyberbully.train --subset 500 --epochs 1 --batch-size 8 --max-length 64
+# training: smoke dulu, baru penuh
+python -m cyberbully.train \
+    --model hf-internal-testing/tiny-random-BertForSequenceClassification \
+    --subset 256 --epochs 1 --batch-size 16 --max-length 64 --out models/smoke
 python -m cyberbully.train --batch-size 16 --class-weights
 # kalau OOM: --batch-size 8 --grad-accum 2 --max-length 64
 # model lain: --model indolem/indobertweet-base-uncased --out models/indobertweet
 
-# evaluasi
-python -m cyberbully.evaluate
+# evaluasi (test hanya dengan --confirm-test dan threshold dari validation)
+python -m cyberbully.evaluate --split val
 
 # test
 pytest -q
@@ -89,7 +96,9 @@ uvicorn api.main:app --reload
 cd interface && npm install && npm run dev
 ```
 
-Jangan menjalankan training penuh dari dalam notebook. Pakai script di atas supaya tidak putus saat kernel mati atau laptop sleep.
+Training penuh tidak dijalankan dari notebook lokal. Pengecualian: notebook Colab
+boleh **memanggil** `python -m cyberbully.train` (lihat `docs/colab.md` dan
+`notebooks/06_colab_training.ipynb`), tetapi logika training tetap di `src/`.
 
 ## 5. Aturan Python
 
@@ -114,12 +123,12 @@ Jangan menjalankan training penuh dari dalam notebook. Pakai script di atas supa
 9. Preprocessing tetap **minimal** untuk BERT: jangan hapus stopword, jangan stemming, jangan buang semua tanda baca. Emoji dan tanda baca bisa membawa sinyal sarkasme.
 10. Kalau data imbalanced, gunakan `--class-weights` atau oversampling, dan sebutkan di laporan.
 
-## 7. Aturan MPS / Mac
+## 7. Aturan MPS / Mac dan CUDA / Colab
 
-- Jangan pakai `fp16=True` (itu untuk CUDA).
-- `dataloader_num_workers=0`.
-- Mulai dari `batch_size=8–16`, `max_length=64–128`; sesuaikan dengan RAM. Cek RAM dengan `sysctl -n hw.memsize`.
+- Mac/MPS: jangan pakai `fp16=True`; `dataloader_num_workers=0`; mulai `batch_size=8–16`, `max_length=64–128`.
 - Mac ini tanpa fan: untuk run panjang, ingatkan pemilik untuk memakai charger dan ventilasi, dan laporkan jika kecepatan turun drastis (throttling).
+- Colab/CUDA: `fp16` otomatis aktif di T4, `dataloader_num_workers=2`; simpan checkpoint ke Drive karena runtime bisa mati, lalu lanjutkan dengan `--resume`.
+- Device dipilih otomatis lewat `cyberbully.runtime.resolve_device` (`cuda` > `mps` > `cpu`); jangan hardcode.
 - Selalu uji pipeline dengan `--subset` kecil sebelum run penuh dan laporkan waktu per langkah.
 - Jika op tidak didukung MPS, andalkan `PYTORCH_ENABLE_MPS_FALLBACK=1`. Jangan menulis workaround rumit sebelum melapor.
 
@@ -129,15 +138,19 @@ Jangan menjalankan training penuh dari dalam notebook. Pakai script di atas supa
 
   | File | Tujuan |
   |---|---|
+  | `00_colab_setup` | menyiapkan runtime Colab, paket, Drive, dan split data |
   | `01_eda` | memahami data: label, panjang teks, duplikat, sampel |
   | `02_baseline_tfidf` | baseline + top fitur per kelas |
   | `03_error_analysis` | FN/FP model, pola error |
   | `04_model_comparison` | IndoBERT vs IndoBERTweet vs baseline |
   | `05_threshold_tuning` | PR curve, threshold dari validation set |
+  | `06_colab_training` | smoke + full training di Colab lewat CLI, evaluasi val |
   | `99_report` | laporan utuh, memuat hasil (bukan training) |
 
+- **Wajib bisa dipahami pemula ML/NLP:** setiap notebook memuat Tujuan, Prasyarat, Estimasi waktu, Glosarium, dan Ringkasan. Setiap sel kode didahului markdown yang menjelaskan apa yang dilakukan, kenapa, cara membaca output, dan apa yang terjadi bila gagal.
+- `tests/test_notebooks.py` menegakkan struktur itu; notebook tanpa penjelasan akan menggagalkan test.
 - Notebook memanggil `src/`, tidak menduplikasi logikanya.
-- Training tidak dijalankan di notebook.
+- Training penuh tidak dijalankan di notebook lokal. Pengecualian Colab: notebook boleh memanggil `python -m cyberbully.train`, bukan menyalin kode training.
 - Sebelum commit: **Restart & Run All** harus lolos. Notebook yang butuh model/data asli harus memberi pesan guard yang jelas bila belum ada, bukan crash.
 - Output besar dibersihkan sebelum commit, kecuali yang menjadi bukti hasil di `99_report`.
 - Jangan menyimpan data mentah atau teks pengguna asli di output notebook yang di-commit.
@@ -145,6 +158,7 @@ Jangan menjalankan training penuh dari dalam notebook. Pakai script di atas supa
 ## 9. Data, privasi, dan etika
 
 - Dataset dipakai untuk riset/edukasi. Patuhi lisensi dan ToS tiap dataset dan platform.
+- Dataset proyek: `re_dataset.csv` (Ibrohim & Budi, 2019), lisensi **CC BY-NC-SA 4.0** — wajib atribusi, non-komersial, share-alike. Detail ada di `docs/dataset.md`.
 - **Jangan scraping** Twitter/Instagram/TikTok. **Jangan mengunduh dataset** tanpa persetujuan pemilik repo. Yang boleh dibuat tanpa izin hanyalah data sintetis kecil untuk smoke test.
 - Jangan commit data mentah, data hasil proses, atau model. Cek `.gitignore` sebelum `git add`.
 - Jangan mencetak atau menyimpan username, nomor telepon, atau info pribadi yang ada di dataset. Anonimkan bila perlu.
@@ -205,8 +219,8 @@ Dilarang tanpa izin eksplisit:
 ## 16. Status project (perbarui oleh agent di akhir tiap sesi, singkat)
 
 - [x] Audit environment `ml-lab` disetujui
-- [ ] Pipeline tervalidasi di MPS (data sintetis)
-- [ ] Dataset dipilih dan label dipetakan (keputusan pemilik)
+- [x] Pipeline tervalidasi di MPS (smoke tiny model; metrik tidak bermakna)
+- [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [ ] Baseline TF-IDF selesai
 - [ ] Fine-tuning IndoBERT selesai
 - [ ] Eval set manual ≥ 200 contoh
