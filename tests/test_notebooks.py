@@ -44,3 +44,12 @@ def test_notebook_has_required_explanations(path: Path) -> None:
 
     source = "\n".join(cell.source for cell in notebook.cells)
     assert "/Users/" not in source, f"{path.name} memuat path absolut pengguna"
+
+    if path.name != "99_report.ipynb":
+        outputs = [
+            output
+            for cell in notebook.cells
+            if cell.cell_type == "code"
+            for output in cell.get("outputs", [])
+        ]
+        assert not outputs, f"{path.name} masih menyimpan output; bersihkan sebelum commit"
