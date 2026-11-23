@@ -3,7 +3,14 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from cyberbully.config import LABEL_COLUMN, TEXT_COLUMN
-from cyberbully.data import dedup, map_labels, prepare, split_dataset, validate_splits
+from cyberbully.data import (
+    dedup,
+    map_labels,
+    prepare,
+    read_csv_auto,
+    split_dataset,
+    validate_splits,
+)
 
 
 def make_frame(n: int = 60) -> pd.DataFrame:
@@ -28,6 +35,34 @@ def test_map_labels_rejects_multiple_unknown_classes() -> None:
     df = pd.DataFrame({"text": ["a", "b", "c"], "label": ["bully", "netral", "sayang"]})
     with pytest.raises(ValueError, match="lebih dari dua"):
         map_labels(df, ["bully"])
+
+
+def test_map_labels_union_of_columns() -> None:
+    df = pd.DataFrame(
+        {
+            "text": ["a", "b", "c", "d"],
+            "HS": [1, 0, 1, 0],
+            "Abusive": [0, 1, 1, 0],
+        }
+    )
+    union = map_labels(df, ["1"], label_cols=["HS", "Abusive"], mode="any")
+    both = map_labels(df, ["1"], label_cols=["HS", "Abusive"], mode="all")
+    assert union[LABEL_COLUMN].tolist() == [1, 1, 1, 0]
+    assert both[LABEL_COLUMN].tolist() == [0, 0, 1, 0]
+
+
+def test_map_labels_rejects_unknown_mode() -> None:
+    df = pd.DataFrame({"text": ["a"], "label": ["bully"]})
+    with pytest.raises(ValueError, match="mode label"):
+        map_labels(df, ["bully"], mode="xor")
+
+
+def test_read_csv_auto_replaces_invalid_utf8(tmp_path) -> None:
+    path = tmp_path / "rusak.csv"
+    path.write_bytes(b"text,label\nhalo \xf0,1\nbaik,0\n")
+    with pytest.warns(RuntimeWarning, match="bukan UTF-8 valid"):
+        df = read_csv_auto(path)
+    assert "\ufffd" in df["text"].iloc[0]
 
 
 def test_dedup_uses_normalized_text() -> None:
@@ -88,3 +123,29 @@ def test_prepare_dedups_before_split_and_writes_csv(tmp_path) -> None:
         loaded = pd.read_csv(path)
         assert list(loaded.columns) == [TEXT_COLUMN, LABEL_COLUMN]
         assert len(loaded) == len(splits[name])
+
+
+def test_prepare_keeps_support_columns(tmp_path) -> None:
+    rows = []
+    for i in range(40):
+        rows.append(
+            {
+                "tweet": f"contoh tweet {i}",
+                "HS": i % 2,
+                "Abusive": 1 if i % 3 == 0 else 0,
+            }
+        )
+    source = tmp_path / "raw.csv"
+    pd.DataFrame(rows).to_csv(source, index=False)
+
+    splits = prepare(
+        source,
+        "tweet",
+        ["HS", "Abusive"],
+        ["1"],
+        out_dir=tmp_path / "processed",
+        keep_cols=["HS", "Abusive"],
+    )
+
+    for part in splits.values():
+        assert list(part.columns) == [TEXT_COLUMN, LABEL_COLUMN, "HS", "Abusive"]

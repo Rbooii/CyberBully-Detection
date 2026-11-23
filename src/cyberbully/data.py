@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import warnings
+from functools import reduce
 from itertools import combinations
 from pathlib import Path
 from typing import Mapping, Sequence
@@ -13,36 +15,92 @@ from sklearn.model_selection import train_test_split
 from .config import DATA_PROCESSED, LABEL_COLUMN, SEED, SPLIT_RATIOS, TEXT_COLUMN
 from .preprocess import normalize_text
 
+_REPLACEMENT_CHAR = "\ufffd"
 
-def load_csv(path: Path, text_col: str, label_col: str) -> pd.DataFrame:
-    """Baca CSV dan sisakan hanya kolom teks serta label, tanpa baris kosong."""
-    df = pd.read_csv(path)
-    missing = {text_col, label_col} - set(df.columns)
+
+def read_csv_auto(path: Path, encoding: str = "auto") -> pd.DataFrame:
+    """Baca CSV dengan encoding eksplisit atau deteksi aman UTF-8.
+
+    Mode ``auto`` mencoba UTF-8 strict, lalu UTF-8 dengan karakter rusak
+    diganti. Tidak jatuh ke latin-1 karena itu membuat teks UTF-8 yang valid
+    justru menjadi mojibake.
+    """
+    if encoding != "auto":
+        return pd.read_csv(path, encoding=encoding)
+
+    try:
+        return pd.read_csv(path, encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        pass
+
+    df = pd.read_csv(path, encoding="utf-8", encoding_errors="replace")
+    broken = int(df.astype(str).apply(lambda col: col.str.count(_REPLACEMENT_CHAR)).sum().sum())
+    warnings.warn(
+        f"{path.name}: {broken} karakter bukan UTF-8 valid diganti '?' "
+        "(encoding='auto'). Periksa sumber data bila jumlahnya besar.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    return df
+
+
+def load_csv(
+    path: Path,
+    text_col: str,
+    label_col: str | Sequence[str],
+    *,
+    keep_cols: Sequence[str] = (),
+    encoding: str = "auto",
+) -> pd.DataFrame:
+    """Baca CSV dan sisakan kolom teks, kolom label, serta kolom pendukung."""
+    label_cols = [label_col] if isinstance(label_col, str) else list(label_col)
+    df = read_csv_auto(path, encoding)
+
+    columns = list(dict.fromkeys([text_col, *label_cols, *keep_cols]))
+    missing = [column for column in columns if column not in df.columns]
     if missing:
-        raise ValueError(f"Kolom tidak ditemukan: {', '.join(sorted(missing))}")
+        raise ValueError(f"Kolom tidak ditemukan: {', '.join(missing)}")
 
-    df = df[[text_col, label_col]].dropna()
-    return df.rename(columns={text_col: TEXT_COLUMN, label_col: LABEL_COLUMN})
+    df = df[columns].dropna(subset=[text_col, *label_cols])
+    df[text_col] = df[text_col].astype(str)
+    return df.rename(columns={text_col: TEXT_COLUMN})
 
 
-def map_labels(df: pd.DataFrame, positive: Sequence[str]) -> pd.DataFrame:
-    """Petakan nilai label ke 0/1; semua nilai di `positive` menjadi kelas bully."""
+def map_labels(
+    df: pd.DataFrame,
+    positive: Sequence[str],
+    label_cols: Sequence[str] | None = None,
+    mode: str = "any",
+) -> pd.DataFrame:
+    """Gabungkan kolom label menjadi 0/1; nilai di `positive` dianggap bully."""
     if not positive:
         raise ValueError("minimal satu nilai --positive wajib diberikan")
+    if mode not in {"any", "all"}:
+        raise ValueError("mode label harus 'any' atau 'all'")
+
+    label_cols = list(label_cols) if label_cols is not None else [LABEL_COLUMN]
+    positive_values = {str(value).strip().casefold() for value in positive}
+    matches: list[pd.Series] = []
+
+    for column in label_cols:
+        if column not in df.columns:
+            raise ValueError(f"Kolom label tidak ditemukan: {column}")
+        values = df[column].astype(str).str.strip().str.casefold()
+        unknown = set(values.unique()) - positive_values
+        if len(unknown) > 1:
+            raise ValueError(
+                f"kolom '{column}' memuat lebih dari dua nilai "
+                f"({', '.join(sorted(unknown | positive_values))}); "
+                "petakan eksplisit sebelum melanjutkan"
+            )
+        matches.append(values.isin(positive_values))
+
+    combined = reduce(lambda left, right: left & right, matches) if mode == "all" else reduce(
+        lambda left, right: left | right, matches
+    )
 
     result = df.copy()
-    labels = result[LABEL_COLUMN].astype(str).str.strip().str.casefold()
-    positive_values = {str(value).strip().casefold() for value in positive}
-
-    unknown = set(labels.unique()) - positive_values
-    if len(unknown) > 1:
-        raise ValueError(
-            "lebih dari dua nilai label ditemukan "
-            f"({', '.join(sorted(unknown | positive_values))}); "
-            "petakan eksplisit sebelum melanjutkan"
-        )
-
-    result[LABEL_COLUMN] = labels.isin(positive_values).astype(int)
+    result[LABEL_COLUMN] = combined.astype(int)
     return result
 
 
@@ -76,10 +134,8 @@ def validate_splits(splits: Mapping[str, pd.DataFrame]) -> None:
     for first, second in combinations(sorted(texts), 2):
         overlap = texts[first] & texts[second]
         if overlap:
-            sample = next(iter(overlap))
             raise ValueError(
-                f"data leakage: {len(overlap)} teks muncul di "
-                f"{first} dan {second} (contoh: {sample!r})"
+                f"data leakage: {len(overlap)} teks muncul di {first} dan {second}"
             )
 
 
@@ -134,15 +190,31 @@ def save_splits(
 def prepare(
     input_path: Path,
     text_col: str,
-    label_col: str,
+    label_col: str | Sequence[str],
     positive: Sequence[str],
     out_dir: Path = DATA_PROCESSED,
     seed: int = SEED,
+    *,
+    keep_cols: Sequence[str] = (),
+    encoding: str = "auto",
+    label_mode: str = "any",
 ) -> dict[str, pd.DataFrame]:
     """Jalankan seluruh alur data: load, map label, dedup, split, simpan."""
-    raw = load_csv(input_path, text_col, label_col)
-    mapped = map_labels(raw, positive)
+    label_cols = [label_col] if isinstance(label_col, str) else list(label_col)
+    raw = load_csv(
+        input_path,
+        text_col,
+        label_cols,
+        keep_cols=keep_cols,
+        encoding=encoding,
+    )
+    mapped = map_labels(raw, positive, label_cols=label_cols, mode=label_mode)
     cleaned = dedup(mapped)
+
+    final_columns = [TEXT_COLUMN, LABEL_COLUMN]
+    final_columns += [column for column in keep_cols if column not in final_columns]
+    cleaned = cleaned[final_columns]
+
     splits = split_dataset(cleaned, seed=seed)
     save_splits(splits, out_dir=out_dir)
     return splits
@@ -152,12 +224,29 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True, help="CSV dataset mentah")
     parser.add_argument("--text-col", required=True, help="nama kolom teks")
-    parser.add_argument("--label-col", required=True, help="nama kolom label")
+    parser.add_argument(
+        "--label-col",
+        nargs="+",
+        required=True,
+        help="satu atau beberapa kolom label (digabung sesuai --label-mode)",
+    )
     parser.add_argument(
         "--positive",
         nargs="+",
         required=True,
         help="satu atau beberapa nilai label yang berarti bully",
+    )
+    parser.add_argument("--label-mode", choices=("any", "all"), default="any")
+    parser.add_argument(
+        "--keep-cols",
+        nargs="*",
+        default=[],
+        help="kolom tambahan yang disimpan untuk analisis (mis. HS Abusive)",
+    )
+    parser.add_argument(
+        "--encoding",
+        default="auto",
+        help="encoding CSV; default auto (UTF-8, ganti byte rusak)",
     )
     parser.add_argument("--out-dir", type=Path, default=DATA_PROCESSED)
     parser.add_argument("--seed", type=int, default=SEED)
@@ -174,6 +263,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         positive=args.positive,
         out_dir=args.out_dir,
         seed=args.seed,
+        keep_cols=args.keep_cols,
+        encoding=args.encoding,
+        label_mode=args.label_mode,
     )
 
     print(f"dataset bersih: {sum(len(part) for part in splits.values())} baris")

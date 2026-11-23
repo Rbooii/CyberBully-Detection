@@ -1,6 +1,11 @@
 import pytest
 
-from cyberbully.preprocess import MENTION_TOKEN, URL_TOKEN, normalize_text
+from cyberbully.preprocess import (
+    MENTION_TOKEN,
+    URL_TOKEN,
+    normalize_text,
+    repair_escaped_bytes,
+)
 
 
 def test_keeps_emoji_and_punctuation() -> None:
@@ -29,3 +34,20 @@ def test_idempotent() -> None:
 def test_rejects_non_string() -> None:
     with pytest.raises(TypeError):
         normalize_text(None)  # type: ignore[arg-type]
+
+
+def test_repairs_escaped_utf8_bytes() -> None:
+    escaped = "dasar bodoh \\xf0\\x9f\\x98\\xa1"
+    assert repair_escaped_bytes(escaped) == "dasar bodoh 😡"
+
+
+def test_keeps_invalid_escape_run() -> None:
+    assert repair_escaped_bytes("rusak \\x84") == "rusak \\x84"
+
+
+def test_literal_newline_becomes_space() -> None:
+    assert normalize_text("halo\\ndunia") == "halo dunia"
+
+
+def test_normalize_repairs_escaped_emoji() -> None:
+    assert normalize_text("DASAR BEGO!!! \\xf0\\x9f\\x98\\xa1") == "dasar bego!!! 😡"
