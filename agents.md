@@ -1,0 +1,215 @@
+# AGENTS.md
+
+Instruksi tetap untuk AI coding agent yang bekerja di repo ini. Baca seluruhnya sebelum mengubah apa pun. Kalau instruksi di chat bertentangan dengan file ini, ikuti chat, lalu sebutkan konfliknya.
+
+Bahasa komunikasi dengan pemilik repo: **Indonesia**. Identifier kode, nama file, dan commit message: **English**. Komentar kode: singkat, boleh Indonesia.
+
+---
+
+## 1. Ringkasan project
+
+Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan fine-tuning IndoBERT.
+
+- Task: klasifikasi biner `bully` (1) / `non-bully` (0).
+- Tantangan utama: **sindiran/satire tanpa kata kasar**. Model yang hanya belajar "ada kata kasar = bully" dianggap gagal, sekalipun metrik di test set tinggi.
+- Base model: `indobenchmark/indobert-base-p1`. Pembanding: `indolem/indobertweet-base-uncased`.
+- Output akhir: model, API (FastAPI), frontend demo (React), notebook laporan.
+- Pemilik repo adalah mahasiswa CS yang masih belajar workflow ML dan notebook. Jelaskan *kenapa* di balik keputusan teknis penting, jangan hanya memberi kode.
+
+## 2. Environment
+
+- Mesin: MacBook Air M3 (Apple Silicon, arm64, tanpa fan). Training memakai backend **MPS**.
+- Environment Python: **`ml-lab`**. Jenisnya (conda / venv / pyenv-virtualenv) dan path-nya harus dideteksi, jangan ditebak.
+  - Hasil audit (2026-11-23, disetujui pemilik): `ENV_TYPE=venv (uv 0.13.8)`, `ENV_PATH=/Users/arcozkwn/.venvs/ml`, `PYTHON=/Users/arcozkwn/.venvs/ml/bin/python`
+  - Terpasang: Python 3.12.16, torch 2.15.0 (MPS True), transformers 5.24.0, scikit-learn 1.9.1, pandas 3.1.1, fastapi 0.165.0, pytest 9.2.0.
+- Semua perintah Python dijalankan **di dalam `ml-lab`**. Jangan memakai Python sistem/global. Jangan membuat environment baru tanpa izin.
+- Wajib: `export PYTORCH_ENABLE_MPS_FALLBACK=1` saat training/inference di Mac.
+- Versi minimum: Python ≥ 3.10, `transformers` ≥ 4.46, Node ≥ 18 (frontend).
+- Verifikasi MPS: `python -c "import torch; print(torch.backends.mps.is_available())"` harus `True`.
+
+## 3. Struktur repo
+
+```
+.
+├── agents.md
+├── README.md
+├── pyproject.toml
+├── agent/              # skills.md (cara kerja) + memory.md (log keputusan), di-commit
+├── data/
+│   ├── raw/            # dataset asli, read-only, gitignored
+│   ├── processed/      # train/val/test.csv, gitignored
+│   └── eval/           # test set manual (implicit_eval.csv), di-commit
+├── notebooks/          # eksplorasi & laporan, bernomor
+├── src/cyberbully/     # semua logika reusable
+│   ├── config.py       # path, nama model, konstanta
+│   ├── preprocess.py   # normalize_text
+│   ├── data.py         # load, prepare, split
+│   ├── train.py        # fine-tuning (HF Trainer)
+│   ├── evaluate.py     # metrik test set + eval set manual
+│   └── predict.py      # Predictor (dipakai API & notebook)
+├── scripts/            # utilitas CLI sekali pakai
+├── api/                # FastAPI: POST /predict, GET /health
+├── interface/          # Vite + React + TypeScript (frontend)
+├── models/             # checkpoint hasil training, gitignored
+├── out/                # metrik & artefak run, gitignored
+└── tests/              # pytest
+```
+
+Aturan penempatan:
+- Logika yang dipakai lebih dari satu tempat **harus** ada di `src/cyberbully/`, bukan di notebook atau API.
+- `api/` dan notebook hanya *memanggil* `src/`.
+- Script sekali pakai ke `scripts/`, bukan `src/`.
+
+## 4. Perintah standar
+
+```bash
+# setup (sekali)
+pip install -e ".[api,dev]"
+
+# data
+python -m cyberbully.data --input data/raw/<file> \
+    --text-col <kolom_teks> --label-col <kolom_label> [--positive <nilai_bully> ...]
+
+# training (debug cepat dulu, baru penuh)
+python -m cyberbully.train --subset 500 --epochs 1 --batch-size 8 --max-length 64
+python -m cyberbully.train --batch-size 16 --class-weights
+# kalau OOM: --batch-size 8 --grad-accum 2 --max-length 64
+# model lain: --model indolem/indobertweet-base-uncased --out models/indobertweet
+
+# evaluasi
+python -m cyberbully.evaluate
+
+# test
+pytest -q
+
+# API
+uvicorn api.main:app --reload
+
+# frontend
+cd interface && npm install && npm run dev
+```
+
+Jangan menjalankan training penuh dari dalam notebook. Pakai script di atas supaya tidak putus saat kernel mati atau laptop sleep.
+
+## 5. Aturan Python
+
+- Type hint untuk fungsi publik. Docstring satu baris yang menjelaskan *tujuan*, bukan mengulang nama fungsi.
+- Gaya: PEP 8, `snake_case` untuk fungsi/variabel, `PascalCase` untuk kelas. Path memakai `pathlib`, bukan string concatenation.
+- Path proyek selalu lewat `cyberbully.config`, jangan hardcode path absolut.
+- Tidak ada `print` debug yang tersisa di `src/` selain log yang disengaja.
+- Jangan menelan exception diam-diam (`except: pass`). Tangani yang spesifik atau biarkan naik.
+- Dependency baru: tambahkan ke `pyproject.toml` dan sebutkan alasannya. Jangan meng-install paket yang tidak dipakai.
+- Setiap perubahan di `preprocess.py` / `data.py` wajib disertai atau memperbarui test di `tests/`.
+
+## 6. Aturan ML (penting, jangan dilanggar)
+
+1. **Tidak boleh ada data leakage.** Dedup dan normalisasi dilakukan *sebelum* split. Teks yang sama atau nyaris sama tidak boleh muncul di train dan test. Fit apa pun (TF-IDF, scaler, threshold) hanya pada data train/val.
+2. **Test set disentuh sekali** untuk laporan akhir per model. Pilihan hyperparameter dan threshold diambil dari **validation set**.
+3. **Seed tetap** (`config.SEED = 42`) untuk split dan training supaya hasil bisa direproduksi.
+4. **Jangan hanya melaporkan accuracy.** Wajib: precision, recall, F1 untuk kelas bully, confusion matrix, dan akurasi per kategori di `data/eval/implicit_eval.csv`.
+5. **Bandingkan dengan baseline** TF-IDF + Logistic Regression. Kalau IndoBERT tidak jauh lebih baik, selidiki data sebelum mengutak-atik model.
+6. **Lakukan error analysis** (false negative dan false positive) sebelum menyimpulkan model "bagus".
+7. **Hasil di data sintetis/smoke test tidak bermakna** dan tidak boleh dilaporkan sebagai performa model.
+8. Jangan mengklaim peningkatan tanpa angka sebelum-sesudah dari run yang sama kondisinya (split, seed, hyperparameter).
+9. Preprocessing tetap **minimal** untuk BERT: jangan hapus stopword, jangan stemming, jangan buang semua tanda baca. Emoji dan tanda baca bisa membawa sinyal sarkasme.
+10. Kalau data imbalanced, gunakan `--class-weights` atau oversampling, dan sebutkan di laporan.
+
+## 7. Aturan MPS / Mac
+
+- Jangan pakai `fp16=True` (itu untuk CUDA).
+- `dataloader_num_workers=0`.
+- Mulai dari `batch_size=8–16`, `max_length=64–128`; sesuaikan dengan RAM. Cek RAM dengan `sysctl -n hw.memsize`.
+- Mac ini tanpa fan: untuk run panjang, ingatkan pemilik untuk memakai charger dan ventilasi, dan laporkan jika kecepatan turun drastis (throttling).
+- Selalu uji pipeline dengan `--subset` kecil sebelum run penuh dan laporkan waktu per langkah.
+- Jika op tidak didukung MPS, andalkan `PYTORCH_ENABLE_MPS_FALLBACK=1`. Jangan menulis workaround rumit sebelum melapor.
+
+## 8. Aturan notebook
+
+- Nama: `NN_topik_snake_case.ipynb`. Satu notebook = satu tujuan.
+
+  | File | Tujuan |
+  |---|---|
+  | `01_eda` | memahami data: label, panjang teks, duplikat, sampel |
+  | `02_baseline_tfidf` | baseline + top fitur per kelas |
+  | `03_error_analysis` | FN/FP model, pola error |
+  | `04_model_comparison` | IndoBERT vs IndoBERTweet vs baseline |
+  | `05_threshold_tuning` | PR curve, threshold dari validation set |
+  | `99_report` | laporan utuh, memuat hasil (bukan training) |
+
+- Notebook memanggil `src/`, tidak menduplikasi logikanya.
+- Training tidak dijalankan di notebook.
+- Sebelum commit: **Restart & Run All** harus lolos. Notebook yang butuh model/data asli harus memberi pesan guard yang jelas bila belum ada, bukan crash.
+- Output besar dibersihkan sebelum commit, kecuali yang menjadi bukti hasil di `99_report`.
+- Jangan menyimpan data mentah atau teks pengguna asli di output notebook yang di-commit.
+
+## 9. Data, privasi, dan etika
+
+- Dataset dipakai untuk riset/edukasi. Patuhi lisensi dan ToS tiap dataset dan platform.
+- **Jangan scraping** Twitter/Instagram/TikTok. **Jangan mengunduh dataset** tanpa persetujuan pemilik repo. Yang boleh dibuat tanpa izin hanyalah data sintetis kecil untuk smoke test.
+- Jangan commit data mentah, data hasil proses, atau model. Cek `.gitignore` sebelum `git add`.
+- Jangan mencetak atau menyimpan username, nomor telepon, atau info pribadi yang ada di dataset. Anonimkan bila perlu.
+- Model ini alat bantu moderasi, bukan alat penghukuman otomatis. Cantumkan keterbatasan (butuh konteks, bias dataset, sindiran yang lolos, false positive pada kata kasar akrab) di README dan laporan.
+- `data/eval/implicit_eval.csv` ditulis manual. Jangan mengisinya dengan hasil generate otomatis tanpa label dari pemilik. Kalau diminta membantu menambah contoh, tandai sebagai *usulan* untuk direview.
+
+## 10. API dan frontend
+
+- API: `POST /predict` (body `{"text": str}`, 1–2000 karakter) mengembalikan `label`, `score`, `bully_probability`; `GET /health` mengembalikan `status` dan `model_loaded`. Model belum ada harus menghasilkan **503**, bukan crash. Input tidak valid menghasilkan **422**.
+- Model dimuat sekali saat startup, bukan per request.
+- CORS hanya untuk origin dev (`http://localhost:5173`, `http://127.0.0.1:5173`). Jangan mengubahnya menjadi `*`.
+- Frontend (`interface/`, Vite): React + TypeScript strict. URL API dari `VITE_API_URL`, default `http://localhost:8000`. Tangani state loading dan error. Jangan menampilkan stack trace ke pengguna.
+- Perubahan kontrak API harus diikuti perubahan frontend, test, dan README dalam commit/PR yang sama.
+
+## 11. Git
+
+- Satu commit = satu perubahan logis. Format pesan: `type: ringkasan` (`feat`, `fix`, `docs`, `test`, `refactor`, `chore`), contoh `fix: use processing_class in Trainer`.
+- Jangan `git push`, `git reset --hard`, `git push --force`, atau menulis ulang history tanpa izin.
+- Jangan commit: `data/raw/*`, `data/processed/*`, `models/*`, `out/`, `node_modules/`, `.venv/`, file `.env`, atau token.
+- Jalankan `git status` dan lihat diff sebelum commit; pastikan tidak ada artefak yang ikut.
+
+## 12. Batas keamanan
+
+Dilarang tanpa izin eksplisit:
+- `sudo`, `rm -rf` di luar folder repo, mengubah Python global/sistem, mengubah file shell (`~/.zshrc`, dll.)
+- `brew install/upgrade/uninstall`, meng-upgrade atau meng-uninstall paket di `ml-lab` yang bukan kebutuhan langsung tugas
+- Membaca atau mencetak file rahasia (`~/.ssh`, `.env`, kredensial, token)
+- Mengirim isi repo atau data ke layanan luar selain unduhan model dari `huggingface.co` yang diminta
+- Menjalankan proses di background yang tidak kamu hentikan setelah selesai (uvicorn, vite, dll.)
+
+## 13. Cara bekerja
+
+1. **Pahami dulu**: baca file terkait sebelum mengubah. Jangan berasumsi struktur; cek dengan `ls`/`cat`.
+2. **Rencana singkat** untuk tugas non-trivial: sebutkan file yang akan diubah dan alasannya, lalu kerjakan.
+3. **Perubahan minimal**: jangan refactor besar atau mengganti library tanpa diminta.
+4. **Verifikasi dengan menjalankan**: `pytest`, jalankan script yang diubah, uji endpoint dengan `curl`. Kode yang tidak dijalankan harus dilabeli "belum diuji".
+5. **Lapor jujur**: kalau gagal, tampilkan error aslinya. Jangan mengarang output, metrik, atau hasil, dan jangan mengklaim berhasil tanpa bukti.
+6. **Berhenti dan tanya** jika: ada keputusan dengan trade-off nyata (pilih dataset, pemetaan label, ubah arsitektur), tindakan butuh izin di bagian 12, atau persyaratan ambigu. Ajukan satu pertanyaan yang jelas, lengkap dengan opsi dan rekomendasimu.
+7. Kalau menemukan bug di kode yang ada, perbaiki dengan perubahan kecil dan catat: file, masalah, penyebab, perbaikan.
+
+## 14. Definition of done (per tugas)
+
+- Perintah yang relevan sudah dijalankan dan outputnya dilampirkan
+- `pytest -q` hijau
+- Tidak ada artefak data/model/`node_modules` di staging git
+- README atau docstring diperbarui jika perilaku atau perintah berubah
+- Hal yang belum terverifikasi dinyatakan eksplisit
+
+## 15. Format laporan setelah tugas
+
+1. Ringkasan satu paragraf: apa yang selesai, apa yang tidak
+2. Perubahan: daftar file baru/diubah dengan satu baris alasan
+3. Bukti: perintah yang dijalankan dan hasil pentingnya
+4. Bug/masalah ditemukan: file, penyebab, perbaikan
+5. Belum terverifikasi / butuh keputusan pemilik
+6. Saran langkah berikutnya (maksimal 3)
+
+## 16. Status project (perbarui oleh agent di akhir tiap sesi, singkat)
+
+- [x] Audit environment `ml-lab` disetujui
+- [ ] Pipeline tervalidasi di MPS (data sintetis)
+- [ ] Dataset dipilih dan label dipetakan (keputusan pemilik)
+- [ ] Baseline TF-IDF selesai
+- [ ] Fine-tuning IndoBERT selesai
+- [ ] Eval set manual ≥ 200 contoh
+- [ ] Error analysis selesai
+- [ ] API + frontend demo berjalan dengan model asli
+- [ ] `99_report` terisi
