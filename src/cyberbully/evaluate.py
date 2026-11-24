@@ -18,25 +18,41 @@ from .config import (
     OUT_DIR,
     TEXT_COLUMN,
 )
+from .data import read_frame
 from .metrics import binary_metrics
 from .predict import Predictor
 
+PROPOSAL_STATUSES = {"usulan", "proposed"}
+
 
 def _read_frame(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        raise FileNotFoundError(
-            f"{path} tidak ada; jalankan `python -m cyberbully.data` dulu"
-        )
-    frame = pd.read_csv(path)
-    missing = {TEXT_COLUMN, LABEL_COLUMN} - set(frame.columns)
-    if missing:
-        raise ValueError(f"{path} kehilangan kolom: {', '.join(sorted(missing))}")
+    frame = read_frame(path).reset_index(drop=True)
     labels = set(frame[LABEL_COLUMN].unique())
     if not labels <= {0, 1}:
         raise ValueError(
             f"{path} memuat label selain 0/1: {sorted(labels)}; petakan dulu"
         )
-    return frame.reset_index(drop=True)
+    return frame
+
+
+def _drop_proposals(frame: pd.DataFrame) -> pd.DataFrame:
+    """Buang baris eval set yang masih berstatus usulan (belum direview)."""
+    if "status" not in frame.columns:
+        return frame
+
+    mask = (
+        frame["status"]
+        .astype(str)
+        .str.strip()
+        .str.casefold()
+        .isin(PROPOSAL_STATUSES)
+    )
+    if mask.any():
+        print(
+            f"{int(mask.sum())} baris eval set berstatus usulan dilewati "
+            "sampai direview pemilik."
+        )
+    return frame[~mask].reset_index(drop=True)
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -53,16 +69,11 @@ def _evaluate_implicit(
         print(f"eval set manual tidak ada ({path}); dilewati")
         return None
 
-    frame = pd.read_csv(path)
-    missing = {TEXT_COLUMN, LABEL_COLUMN} - set(frame.columns)
-    if missing:
-        raise ValueError(f"{path} kehilangan kolom: {', '.join(sorted(missing))}")
+    frame = _drop_proposals(_read_frame(path))
+    if frame.empty:
+        print(f"eval set manual kosong setelah filter usulan: {path}")
+        return None
 
-    labels = set(frame[LABEL_COLUMN].unique())
-    if not labels <= {0, 1}:
-        raise ValueError(f"{path} memuat label selain 0/1: {sorted(labels)}")
-
-    frame = frame.reset_index(drop=True)
     probabilities = predictor.predict_proba(frame[TEXT_COLUMN].tolist())
     result: dict[str, object] = {
         "overall": binary_metrics(frame[LABEL_COLUMN].to_numpy(), probabilities, threshold)

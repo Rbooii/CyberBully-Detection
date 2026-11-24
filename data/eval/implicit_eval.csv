@@ -1,0 +1,21 @@
+text,label,category,status
+"Dasar bodoh, kerjaan kayak gini aja nggak becus.",1,hinaan_langsung,usulan
+"Muka lo jelek banget, nggak usah sok tampil.",1,hinaan_langsung,usulan
+"Wah pintar sekali, sampai dua kali salah dan masih bangga.",1,sindiran,usulan
+"Hebat ya, cuma bisa nyalahin orang lain kalau gagal.",1,sindiran,usulan
+"Orang kayak kamu nggak pantas dapat kesempatan itu.",1,merendahkan,usulan
+"Pantesan nggak ada yang betah, kelakuanmu memang menyebalkan.",1,hinaan_langsung,usulan
+"Kamu itu cuma beban, nggak ada gunanya di tim.",1,merendahkan,usulan
+"Pulang aja, jangan bikin malu sekolah ini.",1,merendahkan,usulan
+"Dia memang pantas dijauhi, dasar tukang bikin masalah.",1,merendahkan,usulan
+"Kata-katamu kasar banget, otakmu di mana?",1,hinaan_langsung,usulan
+"Kritik yang membangun: bagian akhir presentasimu masih perlu diperbaiki.",0,kritik,usulan
+"Aku nggak setuju sama pendapatmu, tapi argumenmu menarik.",0,netral,usulan
+"Dasar bodoh, tapi itu becandaan kita berdua ya.",0,kasar_akrab,usulan
+"Semangat terus, besok pasti lebih baik!",0,netral,usulan
+"Maaf ya, tadi aku salah paham. Sudah kuperbaiki.",0,netral,usulan
+"Pemerintah perlu memperbaiki layanan publik, ini masalah serius.",0,kritik,usulan
+"Filmnya biasa saja, endingnya kurang greget.",0,opini,usulan
+"Aku capek banget hari ini, pengen tidur.",0,netral,usulan
+"Kamu lucu kalau lagi marah, jangan diambil hati ya.",0,kasar_akrab,usulan
+"Kualitas produk ini mengecewakan, saya minta refund.",0,keluhan,usulan
