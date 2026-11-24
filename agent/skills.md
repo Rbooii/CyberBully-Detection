@@ -5,18 +5,18 @@ tidak menggantikannya dan tidak boleh dipakai untuk melonggarkan aturan.
 
 ## Environment (audit 2026-11-23)
 
-- `ENV_TYPE=venv` (dibuat uv 0.13.8), `ENV_PATH=/Users/arcozkwn/.venvs/ml`
+- `ENV_TYPE=venv` (uv 0.13.8), `ENV_PATH=/Users/arcozkwn/.venvs/ml`
 - `PYTHON=/Users/arcozkwn/.venvs/ml/bin/python` — Python 3.12.16, arm64
 - Kernel Jupyter: "Python (ML Lab)" → `~/Library/Jupyter/kernels/ml/kernel.json`
-- Tidak ada conda/pyenv di mesin ini. Jangan pakai Python Homebrew (3.15).
+- Tidak ada conda/pyenv. Jangan pakai Python Homebrew (3.15).
 - Terpasang: torch 2.15.0 (MPS True), transformers 5.24.0, datasets 5.2.0,
   accelerate, scikit-learn 1.9.1, pandas 3.1.1, numpy 2.5.4,
-  fastapi 0.165.0, pytest 9.2.0, nbformat 5.11.1, nbclient 0.11.0.
+  fastapi 0.165.0, pytest 9.2.0, nbformat 5.11.1, nbclient 0.11.0, httpx 0.28.1.
 
 ## Perintah
 
 ```bash
-# install ulang paket proyek
+# install
 uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
 
 # data (dataset proyek)
@@ -25,7 +25,10 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
     --label-col HS Abusive --positive 1 --label-mode any \
     --keep-cols HS Abusive
 
-# smoke training (wajib sebelum run penuh)
+# baseline (F1 val 0,881)
+/Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.baseline
+
+# training smoke
 /Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.train \
     --model hf-internal-testing/tiny-random-BertForSequenceClassification \
     --subset 128 --epochs 1 --batch-size 8 --max-length 32 --out models/smoke
@@ -33,16 +36,33 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
 # evaluasi validation
 /Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.evaluate --split val
 
+# API + frontend
+CYBERBULLY_MODEL_DIR=models/indobert/checkpoints/checkpoint-650 \
+    uvicorn api.main:app --reload
+cd interface && npm run dev
+
 # test (addopts sudah -q; jangan tambah -q lagi)
 /Users/arcozkwn/.venvs/ml/bin/python -m pytest
 ```
 
+## Artefak saat ini
+
+- `models/indobert/checkpoints/checkpoint-650` — checkpoint epoch 1 (F1 val
+  0,9141 pada threshold 0,5). **Preliminary**, bukan model final.
+- `models/indobert/val_metrics.json` dan `val_predictions.csv` — hasil evaluasi
+  checkpoint epoch 1.
+- `models/baseline_tfidf.joblib`, `out/baseline_val.json`.
+- `out/threshold.json` — threshold 0,34 dari validation epoch 1.
+- `data/eval/implicit_eval.csv` — 20 usulan; `evaluate.py` melewati baris
+  `status=usulan` sampai direview pemilik.
+
 ## Colab
 
 - Panduan: `docs/colab.md`; notebook `00_colab_setup` lalu `06_colab_training`.
-- Device otomatis CUDA > MPS > CPU (`cyberbully.runtime.resolve_device`).
-- Di T4 `fp16` otomatis aktif; workers 2; checkpoint ke Drive; lanjutkan `--resume`.
-- Repo belum punya remote; pemilik push sendiri. Notebook punya opsi zip/Drive.
+- `06` memakai `RUN_FULL = IN_COLAB`; di Colab otomatis training, di Mac skip.
+- Untuk melanjutkan setelah disconnect: `RESUME = True`.
+- Device otomatis CUDA > MPS > CPU; T4 memakai fp16 dan workers 2.
+- Setelah selesai, unduh `models/indobert` ke laptop dan evaluasi lokal.
 
 ## Konvensi repo
 
@@ -52,24 +72,22 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
 - Semua path lewat `cyberbully.config`; jangan hardcode path absolut.
 - Setiap notebook wajib: Tujuan, Prasyarat, Estimasi waktu, Glosarium, Ringkasan;
   setiap sel kode didahului markdown ≥120 karakter. Ditegakkan
-  `tests/test_notebooks.py`.
+  `tests/test_notebooks.py`, termasuk larangan menyimpan output.
 
 ## Jebakan yang sudah terbukti
 
-- **transformers 5.24**, bukan 4.x:
-  - `Trainer(tokenizer=...)` sudah diganti `processing_class=...`.
-  - `evaluation_strategy` → `eval_strategy`.
-  - `warmup_ratio` sudah tidak ada; hitung `warmup_steps` manual.
-  - `save_safetensors` dan `group_by_length` sudah tidak ada.
-- `prajjwal1/bert-tiny` tokenizernya gagal di transformers 5 (butuh
-  sentencepiece/tiktoken). Untuk smoke pakai
-  `hf-internal-testing/tiny-random-BertForSequenceClassification`; IndoBERT aman.
-- **Dedup setelah normalisasi**: URL/mention diganti token, sehingga komentar
-  berbeda bisa kolaps. Split bisa gagal "tiap kelas butuh minimal 2 contoh".
-- Dataset asli bukan UTF-8 murni (953 karakter rusak) dan 1.435 baris memuat
-  escape `\xf0\x9f...`; `--encoding auto` + `repair_escaped_bytes` menangani.
-  82 run escape tidak valid sengaja dibiarkan.
-- Dedup masih **exact setelah normalisasi**; near-duplicate fuzzy belum ada.
+- **Training lokal dihentikan SIGTERM** di tengah epoch 2 (tanpa traceback/OOM).
+  Jangan mengulang full training di shell agent; pakai Colab atau Terminal
+  pemilik. Checkpoint epoch 1 tetap valid.
+- **Sindiran lolos**: "Wah pintar sekali, sampai salah dua kali." diprediksi
+  non-bully oleh checkpoint epoch 1. Ini temuan kualitatif penting.
+- **transformers 5.24**, bukan 4.x: `processing_class`, `eval_strategy`, tanpa
+  `warmup_ratio`/`save_safetensors`/`group_by_length`.
+- `prajjwal1/bert-tiny` tokenizer gagal di transformers 5; pakai
+  `hf-internal-testing/tiny-random-BertForSequenceClassification`.
+- Dataset bukan UTF-8 murni (953 karakter rusak) dan 1.435 baris memuat escape
+  `\xf0\x9f...`; `--encoding auto` + `repair_escaped_bytes` menangani.
+- Dedup masih exact setelah normalisasi; near-duplicate fuzzy belum ada.
 - `pytest -q` menjadi `-qq` karena `addopts`; ringkasan hilang.
 - Nama file aturan di root adalah `agents.md` (huruf kecil), bukan `AGENTS.md`.
 

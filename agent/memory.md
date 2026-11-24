@@ -104,3 +104,45 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 1. Full training IndoBERT di Colab (atau MPS semalam), catat waktu per epoch.
 2. Baseline TF-IDF + Logistic Regression pada split yang sama.
 3. Threshold tuning dari `val_predictions.csv`, baru evaluasi test sekali.
+
+## 2026-11-24 (sesi 3) — Baseline, API, frontend, dan Colab
+
+**Keputusan**
+
+- Repo remote aktif: `https://github.com/Rbooii/CyberBully-Detection.git`
+  (public); commit lama sudah di-push.
+- Training final 3 epoch dipindahkan ke **Colab T4**. Training lokal di M3
+  berhenti di tengah epoch 2 (SIGTERM, tanpa traceback/OOM); checkpoint epoch 1
+  dipakai sebagai model demo **preliminary**.
+- Eval set manual berisi 20 contoh **usulan** (`status=usulan`), bukan label
+  final. `evaluate.py` melewati baris usulan.
+- Frontend di `interface/` memakai Vite + React + TS strict, desain riset/
+  kredibel, `VITE_API_URL`, state loading/error.
+
+**Bukti**
+
+- Baseline validation: threshold 0,40; accuracy 0,865; precision 0,860;
+  recall 0,903; F1 0,881.
+- IndoBERT epoch 1: threshold 0,50; accuracy 0,907; precision 0,939;
+  recall 0,891; F1 0,9141. Threshold tuned 0,34: F1 0,9146, recall 0,911,
+  precision 0,918. Checkpoint: `models/indobert/checkpoints/checkpoint-650`.
+- `pytest`: 52 passed. `npm run build` sukses (TS strict).
+- API dengan checkpoint: `/health` loaded=true; prediksi hinaan 0,993;
+  ucapan semangat 0,057; input kosong 422. UI diuji di browser desktop/mobile.
+- Temuan kualitatif: sindiran "Wah pintar sekali, sampai salah dua kali."
+  diprediksi non-bully oleh checkpoint epoch 1 (false negative).
+- Notebook 00–06 dan 99 lolos eksekusi lokal lewat kernel `ml`; output dibersihkan.
+
+**Terbuka / belum terverifikasi**
+
+- Full 3 epoch di Colab belum dijalankan; angka final dan test set belum ada.
+- Eval set 20 usulan belum direview; target ≥200 baris final.
+- Threshold 0,34 berasal dari model 1 epoch; harus dihitung ulang dari model final.
+- `models/indobert/val_metrics.json` saat ini milik epoch 1, bukan model final.
+- Panduan Colab belum diuji di runtime Google yang sebenarnya.
+
+**Langkah berikutnya**
+
+1. Push kode terbaru, lalu jalankan 00 + 06 di Colab (3 epoch, checkpoint ke Drive).
+2. Unduh model final, evaluasi validation, tuning threshold, lalu test sekali.
+3. Review 20 usulan eval set; isi hingga ≥200 baris final sebelum laporan.

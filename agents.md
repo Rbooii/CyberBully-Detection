@@ -48,6 +48,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 │   ├── data.py         # load, encoding, map label, dedup, split
 │   ├── runtime.py      # device auto (CUDA/MPS/CPU), seed, workers
 │   ├── metrics.py      # metrik biner + threshold dari validation
+│   ├── baseline.py     # TF-IDF + Logistic Regression (pembanding)
 │   ├── train.py        # fine-tuning (HF Trainer)
 │   ├── evaluate.py     # metrik val/test + eval set manual
 │   └── predict.py      # Predictor (dipakai API & notebook)
@@ -74,6 +75,9 @@ pip install -e ".[api,dev]"
 python -m cyberbully.data --input data/raw/re_dataset.csv \
     --text-col Tweet --label-col HS Abusive --positive 1 --label-mode any \
     --keep-cols HS Abusive
+
+# baseline pembanding
+python -m cyberbully.baseline
 
 # training: smoke dulu, baru penuh
 python -m cyberbully.train \
@@ -221,9 +225,9 @@ Dilarang tanpa izin eksplisit:
 - [x] Audit environment `ml-lab` disetujui
 - [x] Pipeline tervalidasi di MPS (smoke tiny model; metrik tidak bermakna)
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
-- [ ] Baseline TF-IDF selesai
-- [ ] Fine-tuning IndoBERT selesai
-- [ ] Eval set manual ≥ 200 contoh
-- [ ] Error analysis selesai
-- [ ] API + frontend demo berjalan dengan model asli
-- [ ] `99_report` terisi
+- [x] Baseline TF-IDF selesai (F1 val 0,881)
+- [ ] Fine-tuning IndoBERT selesai (baru 1 epoch; 3 epoch menunggu Colab)
+- [ ] Eval set manual ≥ 200 contoh (baru 20 usulan, belum direview)
+- [ ] Error analysis selesai (notebook siap; final setelah model 3 epoch)
+- [x] API + frontend demo berjalan dengan model asli (checkpoint epoch 1, preliminary)
+- [ ] `99_report` terisi (template sudah memuat validation; test belum final)
