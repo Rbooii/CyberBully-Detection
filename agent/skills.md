@@ -33,12 +33,16 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
     --model hf-internal-testing/tiny-random-BertForSequenceClassification \
     --subset 128 --epochs 1 --batch-size 8 --max-length 32 --out models/smoke
 
+# augmentasi sintetis (hanya train)
+/Users/arcozkwn/.venvs/ml/bin/python scripts/generate_synthetic.py
+/Users/arcozkwn/.venvs/ml/bin/python scripts/check_synthetic.py
+/Users/arcozkwn/.venvs/ml/bin/python scripts/augment_train.py
+
 # evaluasi validation
 /Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.evaluate --split val
 
 # API + frontend
-CYBERBULLY_MODEL_DIR=models/indobert/checkpoints/checkpoint-650 \
-    uvicorn api.main:app --reload
+uvicorn api.main:app --reload
 cd interface && npm run dev
 
 # test (addopts sudah -q; jangan tambah -q lagi)
@@ -47,12 +51,15 @@ cd interface && npm run dev
 
 ## Artefak saat ini
 
-- `models/indobert/checkpoints/checkpoint-650` — checkpoint epoch 1 (F1 val
-  0,9141 pada threshold 0,5). **Preliminary**, bukan model final.
-- `models/indobert/val_metrics.json` dan `val_predictions.csv` — hasil evaluasi
-  checkpoint epoch 1.
+- `models/indobert` — model final 3 epoch dari Colab T4. Validation F1 0,926
+  pada threshold 0,5; precision 0,934; recall 0,918.
+- `models/indobert/val_metrics.json` dan `val_predictions.csv` — evaluasi model final.
 - `models/baseline_tfidf.joblib`, `out/baseline_val.json`.
-- `out/threshold.json` — threshold 0,34 dari validation epoch 1.
+- `out/threshold.json` — threshold 0,42 dari validation model final (F1 0,929).
+- `data/synthetic/synthetic_train.csv` — 15k sintetis (gitignored), 9k positif
+  + 6k negatif; validator: nol duplikat/PII/overlap.
+- `data/processed/train_augmented.csv` — 25.397 baris (10.397 real + 15k
+  sintetis), belum dipakai training penuh.
 - `data/eval/implicit_eval.csv` — 20 usulan; `evaluate.py` melewati baris
   `status=usulan` sampai direview pemilik.
 
@@ -78,9 +85,10 @@ cd interface && npm run dev
 
 - **Training lokal dihentikan SIGTERM** di tengah epoch 2 (tanpa traceback/OOM).
   Jangan mengulang full training di shell agent; pakai Colab atau Terminal
-  pemilik. Checkpoint epoch 1 tetap valid.
+  pemilik. Model final 3 epoch sudah diunduh dari Colab.
 - **Sindiran lolos**: "Wah pintar sekali, sampai salah dua kali." diprediksi
-  non-bully oleh checkpoint epoch 1. Ini temuan kualitatif penting.
+  non-bully (p=0,048) bahkan oleh model final 3 epoch. Ini temuan kualitatif
+  penting, bukan bug API.
 - **transformers 5.24**, bukan 4.x: `processing_class`, `eval_strategy`, tanpa
   `warmup_ratio`/`save_safetensors`/`group_by_length`.
 - `prajjwal1/bert-tiny` tokenizer gagal di transformers 5; pakai

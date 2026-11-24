@@ -40,6 +40,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── data/
 │   ├── raw/            # dataset asli, read-only, gitignored
 │   ├── processed/      # train/val/test.csv, gitignored
+│   ├── synthetic/      # data sintetis untuk train, gitignored
 │   └── eval/           # test set manual (implicit_eval.csv), di-commit
 ├── notebooks/          # eksplorasi & laporan, bernomor
 ├── src/cyberbully/     # semua logika reusable
@@ -49,10 +50,11 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 │   ├── runtime.py      # device auto (CUDA/MPS/CPU), seed, workers
 │   ├── metrics.py      # metrik biner + threshold dari validation
 │   ├── baseline.py     # TF-IDF + Logistic Regression (pembanding)
+│   ├── synthetic.py    # generator/validator data sintetis untuk train
 │   ├── train.py        # fine-tuning (HF Trainer)
 │   ├── evaluate.py     # metrik val/test + eval set manual
 │   └── predict.py      # Predictor (dipakai API & notebook)
-├── scripts/            # utilitas CLI sekali pakai
+├── scripts/            # utilitas CLI sekali pakai (generate/check/augment synthetic)
 ├── api/                # FastAPI: POST /predict, GET /health
 ├── interface/          # Vite + React + TypeScript (frontend)
 ├── models/             # checkpoint hasil training, gitignored
@@ -78,6 +80,12 @@ python -m cyberbully.data --input data/raw/re_dataset.csv \
 
 # baseline pembanding
 python -m cyberbully.baseline
+
+# augmentasi sintetis (hanya train)
+python scripts/generate_synthetic.py
+python scripts/check_synthetic.py
+python scripts/augment_train.py
+python -m cyberbully.train --train-file data/processed/train_augmented.csv
 
 # training: smoke dulu, baru penuh
 python -m cyberbully.train \
@@ -166,6 +174,7 @@ boleh **memanggil** `python -m cyberbully.train` (lihat `docs/colab.md` dan
 - **Jangan scraping** Twitter/Instagram/TikTok. **Jangan mengunduh dataset** tanpa persetujuan pemilik repo. Yang boleh dibuat tanpa izin hanyalah data sintetis kecil untuk smoke test.
 - Jangan commit data mentah, data hasil proses, atau model. Cek `.gitignore` sebelum `git add`.
 - Jangan mencetak atau menyimpan username, nomor telepon, atau info pribadi yang ada di dataset. Anonimkan bila perlu.
+- Data sintetis hanya boleh masuk **train**. Wajib lolos `scripts/check_synthetic.py` (tanpa PII, duplikat, atau overlap dengan val/test/eval) dan tidak boleh diklaim sebagai bukti performa.
 - Model ini alat bantu moderasi, bukan alat penghukuman otomatis. Cantumkan keterbatasan (butuh konteks, bias dataset, sindiran yang lolos, false positive pada kata kasar akrab) di README dan laporan.
 - `data/eval/implicit_eval.csv` ditulis manual. Jangan mengisinya dengan hasil generate otomatis tanpa label dari pemilik. Kalau diminta membantu menambah contoh, tandai sebagai *usulan* untuk direview.
 
@@ -226,8 +235,9 @@ Dilarang tanpa izin eksplisit:
 - [x] Pipeline tervalidasi di MPS (smoke tiny model; metrik tidak bermakna)
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [x] Baseline TF-IDF selesai (F1 val 0,881)
-- [ ] Fine-tuning IndoBERT selesai (baru 1 epoch; 3 epoch menunggu Colab)
+- [x] Fine-tuning IndoBERT selesai (3 epoch, F1 val 0,926)
+- [ ] Augmentasi sintetis 15k siap; model B (real+synthetic) belum ditraining
 - [ ] Eval set manual ≥ 200 contoh (baru 20 usulan, belum direview)
-- [ ] Error analysis selesai (notebook siap; final setelah model 3 epoch)
-- [x] API + frontend demo berjalan dengan model asli (checkpoint epoch 1, preliminary)
+- [ ] Error analysis selesai (notebook siap; final setelah eval set)
+- [x] API + frontend demo berjalan dengan model final 3 epoch
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)

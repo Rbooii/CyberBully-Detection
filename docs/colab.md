@@ -5,10 +5,10 @@ Colab, menyimpan checkpoint ke Google Drive, dan memindahkan hasilnya kembali ke
 laptop. Repo: <https://github.com/Rbooii/CyberBully-Detection>.
 
 Colab dipakai karena MacBook Air M3 ini tanpa fan. Training lokal lewat MPS
-sempat berjalan satu epoch (F1 validation 0,914) lalu proses dihentikan di tengah
-epoch kedua. Checkpoint epoch 1 tetap tersimpan di
-`models/indobert/checkpoints/checkpoint-650` dan boleh dipakai untuk demo
-sementara, bukan untuk laporan final.
+sempat berjalan satu epoch lalu dihentikan di tengah epoch kedua; versi final
+3 epoch sudah dilatih di Colab T4 (F1 validation 0,926) dan diunduh ke
+`models/indobert`. Panduan ini tetap dipakai untuk retraining, augmentasi, atau
+mengulang eksperimen dari nol.
 
 ## Alur singkat
 
@@ -180,6 +180,49 @@ Checkpoint disimpan setiap epoch ke Drive. Jika GPU kehabisan memori:
 
 atau turunkan `--max-length 64`.
 
+## 7b. Augmentasi data sintetis (opsional)
+
+Repo punya generator 15.000 contoh sintetis: 9.000 sindiran/merendahkan/satir dan
+6.000 hard negative (kasar akrab, kritik, netral, pujian). Data ini **hanya untuk
+train**; validation/test tetap data asli.
+
+Di Colab, setelah split data:
+
+```bash
+!python scripts/generate_synthetic.py
+!python scripts/check_synthetic.py
+!python scripts/augment_train.py
+```
+
+Output yang diharapkan:
+
+```
+dataset sintetis: 15000 baris
+train augmented: 25397 baris (10397 real + 15000 synthetic)
+```
+
+`check_synthetic.py` harus melaporkan nol duplikat, nol PII, dan nol overlap
+dengan train/val/test/eval. Kalau gagal, jangan lanjut training.
+
+Training dengan augmentasi:
+
+```bash
+!python -m cyberbully.train \
+    --model indobenchmark/indobert-base-p1 \
+    --train-file data/processed/train_augmented.csv \
+    --epochs 3 --batch-size 16 --max-length 128 \
+    --class-weights \
+    --out /content/drive/MyDrive/cyberbully/models/indobert_aug
+```
+
+Bandingkan dengan model real-only pada validation yang sama. Pilih model dari
+validation, bukan eval set. Jika F1 validation turun, jangan pakai model
+augmentasi; laporkan hasilnya apa adanya.
+
+Batasan: data sintetis dibuat dari pola/template, lebih pendek dari tweet asli,
+dan labelnya berasal dari aturan generator. Jangan mengklaim performa dari data
+sintetis; klaim akhir tetap dari test set nyata dan eval set manual.
+
 ## 8. Melanjutkan setelah runtime mati
 
 Colab gratis bisa memutus koneksi. Setelah runtime baru:
@@ -246,14 +289,12 @@ API memuat model sekali saat startup. Kalau `models/indobert` belum ada,
 `GET /health` mengembalikan `model_loaded: false` dan `POST /predict`
 mengembalikan **503**, bukan crash.
 
-Untuk demo memakai checkpoint epoch 1 lokal:
+Model final 3 epoch ada di `models/indobert`. Kalau ingin memakai model lain,
+arahkan environment variable sebelum menjalankan uvicorn:
 
 ```bash
-CYBERBULLY_MODEL_DIR=models/indobert/checkpoints/checkpoint-650 \
-    uvicorn api.main:app --reload
+CYBERBULLY_MODEL_DIR=models/indobert_aug uvicorn api.main:app --reload
 ```
-
-Tandai hasil demo sebagai **preliminary**; checkpoint itu baru 1 epoch.
 
 ## 11. MPS (Mac) vs CUDA (Colab)
 
@@ -281,6 +322,7 @@ argumen device.
 | `No such file: data/processed/train.csv` | Langkah split belum dijalankan. |
 | `ModuleNotFoundError: cyberbully` | `pip install -e .` belum jalan atau `%cd` salah. |
 | `RUN_FULL` tidak jalan | Di luar Colab nilainya `False`. Buka di Colab, atau ubah manual. |
+| `check_synthetic.py` gagal | Ada duplikat/PII/overlap; perbaiki generator atau data sebelum training. |
 | `--resume` tidak menemukan checkpoint | Path `--out` berbeda dari run sebelumnya, atau folder Drive terhapus. |
 | Versi `transformers` beda | Catat versi di `run_meta.json`; jangan mencampur artefak dari run berbeda tanpa catatan. |
 | Model tidak terbaca di API | Pastikan folder berisi `config.json`, bobot, dan tokenizer; cek `GET /health`. |
@@ -291,6 +333,7 @@ argumen device.
 - [ ] Checkpoint terakhir ada di `models/indobert/checkpoints/`.
 - [ ] Tidak ada test set yang dievaluasi tanpa `--confirm-test`.
 - [ ] Waktu per epoch dan versi `transformers` dicatat di `agent/memory.md`.
+- [ ] Jika memakai augmentasi, `check_synthetic.py` lolos dan eval/test tetap data asli.
 - [ ] Dataset dan model tidak diunggah ke repo publik.
 - [ ] Hasil akhir diunduh ke laptop sebelum runtime dihapus.
 

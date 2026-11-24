@@ -146,3 +146,49 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 1. Push kode terbaru, lalu jalankan 00 + 06 di Colab (3 epoch, checkpoint ke Drive).
 2. Unduh model final, evaluasi validation, tuning threshold, lalu test sekali.
 3. Review 20 usulan eval set; isi hingga ≥200 baris final sebelum laporan.
+
+## 2026-11-25 (sesi 4) — Model final 3 epoch dan data sintetis
+
+**Keputusan**
+
+- Model final 3 epoch dari Colab T4 sudah diunduh ke `models/indobert`; ini
+  model yang dipakai API/frontend, bukan checkpoint epoch 1 lagi.
+- Eval set manual tetap 20 usulan; belum direview dan belum dipakai untuk
+  evaluasi final.
+- Menambah 15k data sintetis untuk augmentasi train: 9.000 positif
+  (sindiran/merendahkan/satir) + 6.000 hard negative (kasar akrab, kritik,
+  netral, pujian). Hanya train; val/test tetap data asli.
+- Generator memakai hybrid: seed tulis tangan + pola/slot, deterministik dengan
+  seed 42. CSV gitignored; generator/validator di-commit.
+
+**Bukti**
+
+- Model final validation (threshold 0,5): accuracy 0,9185; precision 0,9339;
+  recall 0,9184; F1 0,9261; CM [[530,47],[59,664]]. Threshold 0,42: F1 0,9292,
+  recall 0,9253, precision 0,9331.
+- API dengan model final: hinaan p=0,999; sindiran "Wah pintar sekali..." p=0,048
+  (tetap false negative).
+- `pytest`: 58 passed.
+- Sintetis: 15.000 baris, nol duplikat, nol PII, nol overlap dengan
+  train/val/test/eval. Median 9 kata (data asli 15).
+- Augmented train: 25.397 baris (10.397 real + 15.000 synthetic), 14.779 positif
+  / 10.618 negatif. Smoke training `--train-file` berhasil di MPS.
+- Generator/validator: `scripts/generate_synthetic.py`,
+  `scripts/check_synthetic.py`, `scripts/augment_train.py`.
+
+**Terbuka / belum terverifikasi**
+
+- Model B (real + 15k sintetis) belum ditraining; belum ada bukti augmentasi
+  membantu di validation.
+- Eval set final ≥200 belum ada; test set belum dievaluasi.
+- Data sintetis berbasis template, lebih pendek dari tweet asli, dan labelnya
+  berasal dari aturan generator; bisa memicu overfit pola.
+- Threshold 0,42 harus dihitung ulang untuk model B jika dipakai.
+
+**Langkah berikutnya**
+
+1. Generate + validasi + augmentasi di Colab, lalu training model B dengan
+   `--train-file data/processed/train_augmented.csv`.
+2. Bandingkan A vs B di validation; pilih berdasarkan F1 dan subgroup, bukan eval
+   set/test.
+3. Review eval set hingga ≥200 final, baru evaluasi test sekali dan isi laporan.
