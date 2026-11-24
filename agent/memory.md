@@ -226,3 +226,39 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 1. Ikuti `docs/guide.md` dari langkah 1; mulai dari pipeline data.
 2. Jalankan smoke, lalu full training di Colab; unduh model.
 3. Lanjutkan evaluasi validation, threshold, eval set, test sekali, laporan.
+
+## 2026-11-25 (sesi 6) — Dua model A/B dan guide Colab full training
+
+**Keputusan**
+
+- Output dua model: A real-only `models/indobert_real`, B asli+sintetis
+  `models/indobert_aug`.
+- Satu API memuat keduanya: `/predict?model=a|b`, `/compare`, `/health.models`.
+- Frontend menampilkan dua panel sejajar; selisih probabilitas ditampilkan tanpa
+  klaim otomatis pemenang.
+- Test dievaluasi sekali per model, threshold masing-masing dari validation.
+- Guide khusus: `docs/colab_full_training.md`.
+
+**Bukti**
+
+- `pytest`: 62 passed (termasuk API dua model).
+- `npm run typecheck/build/lint`: sukses.
+- API fake: `/health` models a/b true; `/compare` mengembalikan dua hasil.
+- Screenshot UI compare: `out/ui_compare.png` (model palsu, bukan performa).
+- API tests mencakup: satu model hilang → 503, model key invalid → 422,
+  payload invalid → 422, CORS.
+
+**Terbuka / belum diverifikasi**
+
+- Model A/B asli belum dilatih ulang setelah reset; API belum diuji dengan model
+  nyata dua folder.
+- Angka B belum ada; perbandingan test A/B belum dijalankan.
+- Eval set masih 20 usulan; test belum dievaluasi.
+- Screenshot UI memakai fake predictor, bukan model asli.
+
+**Langkah berikutnya**
+
+1. Jalankan `docs/colab_full_training.md`: train A, generate synthetic, train B.
+2. Unduh kedua model, evaluasi validation, tuning threshold A/B.
+3. Test sekali per model, isi laporan, uji API `/compare` + frontend dengan model
+   asli, commit/push.

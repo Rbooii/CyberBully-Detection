@@ -10,6 +10,7 @@ bawah bisa diulang dari `data/raw/re_dataset.csv` yang tetap disimpan.
 Dokumen pendukung:
 
 - [`docs/dataset.md`](dataset.md) — sumber, lisensi, skema, SHA-256.
+- [`docs/colab_full_training.md`](colab_full_training.md) — full training A/B di Colab.
 - [`docs/colab.md`](colab.md) — detail training Colab, resume, troubleshooting.
 - `README.md` — ringkasan project dan status.
 
@@ -23,7 +24,7 @@ data/raw/re_dataset.csv
         │                           ├── baseline TF-IDF
         │                           └── IndoBERT (MPS/Colab)
         │                                     │
-        │                                     ├── models/indobert
+        │                                     ├── models/indobert_real
         │                                     └── metrik validation
         │
         ├── generator sintetis ──► data/synthetic/synthetic_train.csv
@@ -200,29 +201,46 @@ python -m cyberbully.train \
 Di Mac harus terlihat `device: mps`. Selesai dalam beberapa menit dan menghasilkan
 `models/smoke/run_meta.json`.
 
-## 8. Full training
+## 8. Full training A/B
+
+Panduan detail khusus Colab: [`docs/colab_full_training.md`](colab_full_training.md).
+
+Dua model yang dibandingkan:
+
+| Model | Data train | Output |
+|---|---|---|
+| A | 10.397 komentar asli | `models/indobert_real` |
+| B | 10.397 asli + 15.000 sintetis | `models/indobert_aug` |
 
 ### Opsi A — Colab T4 (disarankan)
 
 1. Upload `re_dataset.csv` ke `MyDrive/cyberbully/data/`.
 2. Buka Colab → **Runtime → T4 GPU**.
 3. Jalankan `notebooks/00_colab_setup.ipynb` sampai split selesai.
-4. Jalankan `notebooks/06_colab_training.ipynb`.
-5. Unduh file root `models/indobert` ke laptop.
-
-Perintah inti:
+4. Train A (real-only):
 
 ```bash
 python -m cyberbully.train \
     --model indobenchmark/indobert-base-p1 \
-    --epochs 3 --batch-size 16 --max-length 128 \
-    --class-weights \
-    --out /content/drive/MyDrive/cyberbully/models/indobert
+    --epochs 3 --batch-size 16 --max-length 128 --class-weights \
+    --out /content/drive/MyDrive/cyberbully/models/indobert_real
 ```
 
-Referensi: 1.950 langkah (3 × 650), sekitar 3–4 menit di T4 untuk dataset ini.
-Kalau OOM: `--batch-size 8 --grad-accum 2 --max-length 96`.
-Kalau runtime mati: set `RESUME = True` di notebook atau tambahkan `--resume`.
+5. Generate/check/augment sintetis (bagian 9), lalu train B:
+
+```bash
+python -m cyberbully.train \
+    --model indobenchmark/indobert-base-p1 \
+    --train-file data/processed/train_augmented.csv \
+    --epochs 3 --batch-size 16 --max-length 128 --class-weights \
+    --out /content/drive/MyDrive/cyberbully/models/indobert_aug
+```
+
+6. Unduh file root kedua folder ke laptop.
+
+Referensi A: 1.950 langkah, sekitar 3–4 menit di T4. Kalau OOM:
+`--batch-size 8 --grad-accum 2 --max-length 96`. Kalau runtime mati:
+tambahkan `--resume`.
 
 ### Opsi B — lokal MPS
 
@@ -230,12 +248,13 @@ Kalau runtime mati: set `RESUME = True` di notebook atau tambahkan `--resume`.
 export PYTORCH_ENABLE_MPS_FALLBACK=1
 caffeinate -i python -m cyberbully.train \
     --epochs 3 --batch-size 16 --max-length 128 \
-    --class-weights --out models/indobert
+    --class-weights --out models/indobert_real
 ```
 
-Mac ini tanpa fan: pakai charger dan ventilasi. Training lokal pernah menerima
-SIGTERM di tengah epoch 2 tanpa traceback; kalau itu terjadi, gunakan Colab.
-`caffeinate` mencegah Mac tidur selama command berjalan.
+Untuk B, tambahkan `--train-file data/processed/train_augmented.csv` dan
+`--out models/indobert_aug`. Mac ini tanpa fan: pakai charger dan ventilasi.
+Training lokal pernah menerima SIGTERM di tengah epoch 2 tanpa traceback; kalau
+itu terjadi, gunakan Colab.
 
 Output penting di folder `--out`:
 
@@ -250,8 +269,8 @@ val_predictions.csv
 checkpoints/
 ```
 
-Referensi hasil final 3 epoch (validation): accuracy 0,918; precision 0,934;
-recall 0,918; **F1 bully 0,926** pada threshold 0,5.
+Referensi A: accuracy 0,918; precision 0,934; recall 0,918; **F1 bully 0,926**
+pada threshold 0,5. Model B belum punya angka referensi.
 
 ## 9. Augmentasi sintetis (opsional)
 
@@ -288,31 +307,47 @@ asli.
 
 ## 10. Evaluasi
 
-### Validation
+### Validation A/B
 
 ```bash
-python -m cyberbully.evaluate --split val
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_real --split val --out-dir out/model_a
+
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_aug --split val --out-dir out/model_b
 ```
 
-Output: `out/val_metrics.json` dan `out/val_predictions.csv`.
+Output: `out/model_a/val_metrics.json`, `out/model_b/val_metrics.json`, dan
+prediksi validation masing-masing.
 
 ### Threshold dari validation
 
-Buka `notebooks/05_threshold_tuning.ipynb` dan jalankan. Notebook menulis
-`out/threshold.json`. Referensi model final: threshold 0,42; F1 0,929; recall
-0,925; precision 0,933.
+Buka `notebooks/05_threshold_tuning.ipynb`. Notebook memilih threshold terpisah
+dan menulis:
 
-### Test sekali
-
-```bash
-python -m cyberbully.evaluate --split test \
-    --threshold 0.42 \
-    --confirm-test
+```
+out/model_a/threshold.json
+out/model_b/threshold.json
 ```
 
-`--confirm-test` adalah pengaman; file `out/test_metrics.json` yang sudah ada
-akan menolak run kedua tanpa `--allow-rerun-test`. Jangan memakai test untuk
-memilih model/threshold.
+Referensi A: threshold 0,42; F1 0,929; recall 0,925; precision 0,933. B belum
+punya angka referensi.
+
+### Test sekali per model
+
+```bash
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_real --split test \
+    --threshold <threshold_A> --out-dir out/model_a --confirm-test
+
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_aug --split test \
+    --threshold <threshold_B> --out-dir out/model_b --confirm-test
+```
+
+`--confirm-test` adalah pengaman; file `out/model_a/test_metrics.json` dan
+`out/model_b/test_metrics.json` menolak run kedua tanpa `--allow-rerun-test`.
+Jangan memakai test untuk memilih model/threshold.
 
 ### Eval set manual
 
@@ -321,11 +356,17 @@ dengan `status=usulan` dilewati sampai Anda review. Target ≥200 baris `final`.
 Jangan mengisi eval set dengan prediksi model.
 
 ```bash
-python -m cyberbully.evaluate --split val \
-    --implicit-eval data/eval/implicit_eval.csv
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_real --split val \
+    --implicit-eval data/eval/implicit_eval.csv --out-dir out/model_a
+
+python -m cyberbully.evaluate \
+    --model-dir models/indobert_aug --split val \
+    --implicit-eval data/eval/implicit_eval.csv --out-dir out/model_b
 ```
 
-Hasil per kategori: `out/implicit_metrics.json`.
+Hasil per kategori: `out/model_a/implicit_metrics.json` dan
+`out/model_b/implicit_metrics.json`.
 
 ## 11. API
 
@@ -333,27 +374,35 @@ Hasil per kategori: `out/implicit_metrics.json`.
 uvicorn api.main:app --reload
 ```
 
-Default model: `models/indobert`. Bisa diarahkan:
+Default: model A di `models/indobert_real`, model B di `models/indobert_aug`.
+Bisa diarahkan:
 
 ```bash
-CYBERBULLY_MODEL_DIR=models/indobert_aug uvicorn api.main:app --reload
+CYBERBULLY_MODEL_A=models/indobert_real \
+CYBERBULLY_MODEL_B=models/indobert_aug \
+    uvicorn api.main:app --reload
 ```
 
 Cek:
 
 ```bash
 curl -s http://127.0.0.1:8000/health
-curl -s -X POST http://127.0.0.1:8000/predict \
+curl -s -X POST http://127.0.0.1:8000/compare \
   -H 'Content-Type: application/json' \
   -d '{"text":"Dasar bodoh, kerjaan kayak gini aja nggak becus."}'
+
+# satu model
+curl -s -X POST http://127.0.0.1:8000/predict?model=b \
+  -H 'Content-Type: application/json' -d '{"text":"dasar bodoh"}'
 
 # input kosong harus 422
 curl -s -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8000/predict \
   -H 'Content-Type: application/json' -d '{"text":"   "}'
 ```
 
-Tanpa model: `/health` → `model_loaded:false`; `/predict` → **503**. Input
-invalid → **422**. CORS hanya `localhost:5173` dan `127.0.0.1:5173`.
+`/health` melaporkan model mana yang aktif. Tanpa model lengkap: `/compare`
+→ **503**; input invalid → **422**. CORS hanya `localhost:5173` dan
+`127.0.0.1:5173`.
 
 ## 12. Frontend
 
@@ -363,8 +412,9 @@ npm install
 npm run dev
 ```
 
-Buka <http://localhost:5173>. API default `http://localhost:8000`; ubah lewat
-`interface/.env.local`:
+Buka <http://localhost:5173>. Halaman menampilkan dua panel: Model A (data asli)
+dan Model B (asli + sintetis), dengan tombol **Bandingkan teks**. API default
+`http://localhost:8000`; ubah lewat `interface/.env.local`:
 
 ```
 VITE_API_URL=http://localhost:8000
@@ -409,7 +459,7 @@ Ringkasan; setiap sel kode didahului penjelasan. Ditegakkan
 | `No such file: data/processed/train.csv` | Split belum dibuat | Jalankan pipeline data |
 | `953 karakter bukan UTF-8` | Artefak file asli | Normal; pipeline sudah menangani |
 | `test set hanya boleh...` | `--confirm-test` belum ada | Tambahkan hanya untuk evaluasi final |
-| API 503 | Model tidak ada/gagal dimuat | Latih model, cek `CYBERBULLY_MODEL_DIR`, lihat `/health` |
+| API 503 | Model tidak ada/gagal dimuat | Latih model, cek `CYBERBULLY_MODEL_A`/`B`, lihat `/health` |
 | CORS error | Origin bukan dev | Jalankan frontend di port 5173 |
 | `npm` gagal | `node_modules` hilang | `cd interface && npm install` |
 | `check_synthetic.py` gagal | Duplikat/PII/overlap | Perbaiki generator/data sebelum training |
@@ -437,14 +487,16 @@ ulang.
 - [ ] Pipeline data menghasilkan 12.997 baris dan split 10.397/1.300/1.300.
 - [ ] Baseline dijalankan.
 - [ ] Smoke training lolos (metrik diabaikan).
-- [ ] Full training selesai; `run_meta.json` dan `val_metrics.json` ada.
-- [ ] Validation dievaluasi.
-- [ ] Threshold dipilih dari validation.
+- [ ] Full training A (real-only) selesai di `models/indobert_real`.
+- [ ] Synthetic 15k lolos check; train augmented dibuat.
+- [ ] Full training B (asli+sintetis) selesai di `models/indobert_aug`.
+- [ ] Validation A dan B dievaluasi.
+- [ ] Threshold A dan B dipilih dari validation masing-masing.
 - [ ] Eval set manual direview (≥200 `final`).
-- [ ] Test dievaluasi sekali dengan `--confirm-test`.
-- [ ] API `200/422/503` diuji.
-- [ ] Frontend build dan dev diuji.
-- [ ] Notebook 99 diisi dari artefak.
+- [ ] Test A dan B masing-masing dievaluasi sekali dengan `--confirm-test`.
+- [ ] API `/health`, `/predict`, `/compare`, 422/503 diuji.
+- [ ] Frontend build dan dev diuji (dua panel A/B).
+- [ ] Notebook 99 diisi dari artefak A/B.
 - [ ] `pytest` hijau; tidak ada data/model di staging git.
 
 ## 17. Angka referensi
@@ -454,8 +506,9 @@ Angka dari run sebelumnya, **bukan jaminan**; hardware/versi bisa mengubah hasil
 | Model | Threshold | Accuracy | Precision bully | Recall bully | F1 bully |
 |---|---|---|---|---|---|
 | Baseline TF-IDF | 0,40 | 0,865 | 0,860 | 0,903 | 0,881 |
-| IndoBERT final 3 epoch | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
-| IndoBERT final, threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
+| IndoBERT A — real-only | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
+| IndoBERT A — threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
+| IndoBERT B — asli + sintetis | belum ada | — | — | — | — |
 
 Test set belum dievaluasi pada run referensi. Eval set manual masih 20 usulan;
 hasil eksplorasi 70% pada contoh sulit **bukan** hasil final.

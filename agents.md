@@ -26,7 +26,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 - Wajib: `export PYTORCH_ENABLE_MPS_FALLBACK=1` saat training/inference di Mac.
 - Versi minimum: Python ≥ 3.10, `transformers` ≥ 4.46, Node ≥ 18 (frontend).
 - Verifikasi MPS: `python -c "import torch; print(torch.backends.mps.is_available())"` harus `True`.
-- Colab (opsional): GPU T4 memakai CUDA. Di sana `fp16` otomatis aktif dan `num_workers=2`; panduan ada di `docs/colab.md`.
+- Colab (opsional): GPU T4 memakai CUDA. Di sana `fp16` otomatis aktif dan `num_workers=2`; panduan ada di `docs/colab.md` dan `docs/colab_full_training.md`.
 
 ## 3. Struktur repo
 
@@ -36,7 +36,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── README.md
 ├── pyproject.toml
 ├── agent/              # skills.md (cara kerja) + memory.md (log keputusan), di-commit
-├── docs/               # guide.md (end-to-end), dataset.md, colab.md
+├── docs/               # guide.md, colab_full_training.md, dataset.md, colab.md
 ├── data/
 │   ├── raw/            # dataset asli, read-only, gitignored
 │   ├── processed/      # train/val/test.csv, gitignored
@@ -55,7 +55,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 │   ├── evaluate.py     # metrik val/test + eval set manual
 │   └── predict.py      # Predictor (dipakai API & notebook)
 ├── scripts/            # utilitas CLI: generate/check/augment synthetic, reset artifacts
-├── api/                # FastAPI: POST /predict, GET /health
+├── api/                # FastAPI: /predict, /compare, /health
 ├── interface/          # Vite + React + TypeScript (frontend)
 ├── models/             # checkpoint hasil training, gitignored
 ├── out/                # metrik & artefak run, gitignored
@@ -92,7 +92,7 @@ python -m cyberbully.train --train-file data/processed/train_augmented.csv \
 python -m cyberbully.train \
     --model hf-internal-testing/tiny-random-BertForSequenceClassification \
     --subset 256 --epochs 1 --batch-size 16 --max-length 64 --out models/smoke
-python -m cyberbully.train --batch-size 16 --class-weights
+python -m cyberbully.train --batch-size 16 --class-weights --out models/indobert_real
 # kalau OOM: --batch-size 8 --grad-accum 2 --max-length 64
 # model lain: --model indolem/indobertweet-base-uncased --out models/indobertweet
 
@@ -185,7 +185,7 @@ boleh **memanggil** `python -m cyberbully.train` (lihat `docs/colab.md` dan
 
 ## 10. API dan frontend
 
-- API: `POST /predict` (body `{"text": str}`, 1–2000 karakter) mengembalikan `label`, `score`, `bully_probability`; `GET /health` mengembalikan `status` dan `model_loaded`. Model belum ada harus menghasilkan **503**, bukan crash. Input tidak valid menghasilkan **422**.
+- API: `POST /predict?model=a|b` (body `{"text": str}`, 1–2000 karakter) mengembalikan `label`, `score`, `bully_probability`; `POST /compare` mengembalikan `a` dan `b`; `GET /health` mengembalikan `status`, `model_loaded`, dan `models` per A/B. Model A default `models/indobert_real`, B `models/indobert_aug`. Model belum lengkap harus menghasilkan **503**, bukan crash. Input tidak valid menghasilkan **422**.
 - Model dimuat sekali saat startup, bukan per request.
 - CORS hanya untuk origin dev (`http://localhost:5173`, `http://127.0.0.1:5173`). Jangan mengubahnya menjadi `*`.
 - Frontend (`interface/`, Vite): React + TypeScript strict. URL API dari `VITE_API_URL`, default `http://localhost:8000`. Tangani state loading dan error. Jangan menampilkan stack trace ke pengguna.
@@ -240,11 +240,11 @@ Dilarang tanpa izin eksplisit:
 - [x] Pipeline tervalidasi di MPS (smoke tiny model; metrik tidak bermakna)
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [x] Baseline TF-IDF selesai (F1 val 0,881)
-- [x] Fine-tuning IndoBERT selesai (3 epoch, F1 val 0,926)
+- [x] Fine-tuning IndoBERT A selesai (3 epoch, F1 val 0,926); B menunggu training ulang
 - [ ] Augmentasi sintetis 15k siap; model B (real+synthetic) belum ditraining
 - [ ] Eval set manual ≥ 200 contoh (baru 20 usulan, belum direview)
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
-- [x] API + frontend demo berjalan dengan model final 3 epoch
+- [x] API + frontend demo dua model (A/B) selesai; butuh model untuk berjalan
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)
 
 Catatan 2026-11-25: artefak model, out/, data/processed/, dan CSV sintetis direset. Angka di atas adalah referensi run sebelumnya; ikuti docs/guide.md untuk reproduksi. Raw data dan eval set tetap ada.

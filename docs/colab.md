@@ -1,10 +1,11 @@
 # Training di Google Colab (GPU T4)
 
-Panduan ini menjelaskan cara melatih IndoBERT untuk proyek ini dari nol di
-Colab, menyimpan checkpoint ke Google Drive, dan memindahkan hasilnya kembali ke
+Panduan ini menjelaskan cara melatih IndoBERT untuk proyek ini di Colab,
+menyimpan checkpoint ke Google Drive, dan memindahkan hasilnya kembali ke
 laptop. Repo: <https://github.com/Rbooii/CyberBully-Detection>.
 
 **Panduan end-to-end dari nol:** [`docs/guide.md`](guide.md).
+**Full training dua model A/B:** [`docs/colab_full_training.md`](colab_full_training.md).
 
 Colab dipakai karena MacBook Air M3 ini tanpa fan. Training lokal lewat MPS
 sempat berjalan satu epoch lalu dihentikan di tengah epoch kedua; versi final
@@ -18,7 +19,7 @@ augmentasi, atau mengulang eksperimen.
 GitHub  ──clone──►  /content/CyberBully       (kode, hilang saat runtime mati)
 Drive   ──copy───►  data/raw/re_dataset.csv   (dataset, permanen)
 data    ──split──►  data/processed/*.csv      (dibuat ulang tiap sesi)
-train   ──save───►  MyDrive/cyberbully/models/indobert  (checkpoint, permanen)
+train   ──save───►  MyDrive/cyberbully/models/indobert_real  (model A, permanen)
 ```
 
 ## 0. Yang perlu disiapkan
@@ -27,7 +28,7 @@ train   ──save───►  MyDrive/cyberbully/models/indobert  (checkpoint,
 - Repo GitHub sudah berisi kode terbaru (public, aman karena data/model
   gitignored).
 - File `re_dataset.csv` ada di laptop.
-- Waktu: 10–15 menit setup + 30–60 menit training di T4.
+- Waktu: 10–15 menit setup + 3–10 menit training per model di T4.
 - Tidak perlu kartu kredit untuk GPU gratis; kuota Colab bisa berubah.
 
 ## 1. Buka Colab dan aktifkan GPU
@@ -163,10 +164,10 @@ jalan dan di Mac otomatis dilewati. Alternatif CLI:
     --model indobenchmark/indobert-base-p1 \
     --epochs 3 --batch-size 16 --max-length 128 \
     --class-weights \
-    --out /content/drive/MyDrive/cyberbully/models/indobert
+    --out /content/drive/MyDrive/cyberbully/models/indobert_real
 ```
 
-Perkiraan T4: 30–60 menit untuk 3 epoch. Angka ini perkiraan, bukan jaminan.
+Perkiraan T4: 3–10 menit untuk 3 epoch, tergantung antrean GPU. Ini perkiraan, bukan jaminan.
 
 Yang dipantau tiap epoch:
 
@@ -223,7 +224,7 @@ augmentasi; laporkan hasilnya apa adanya.
 
 Di `notebooks/06_colab_training.ipynb`, set `RUN_AUGMENTED = True` pada sel
 runtime. Model B disimpan terpisah di `models/indobert_aug`, sehingga model final
-real-only di `models/indobert` tidak tertimpa.
+real-only di `models/indobert_real` tidak tertimpa.
 
 Batasan: data sintetis dibuat dari pola/template, lebih pendek dari tweet asli,
 dan labelnya berasal dari aturan generator. Jangan mengklaim performa dari data
@@ -239,7 +240,7 @@ Colab gratis bisa memutus koneksi. Setelah runtime baru:
 4. Jalankan sel full training.
 
 `--resume` mengambil checkpoint terakhir di
-`MyDrive/cyberbully/models/indobert/checkpoints/`. Untuk mengulang dari nol,
+`MyDrive/cyberbully/models/indobert_real/checkpoints/`. Untuk mengulang dari nol,
 hapus folder model di Drive terlebih dahulu.
 
 ## 9. Unduh hasil ke laptop
@@ -247,7 +248,7 @@ hapus folder model di Drive terlebih dahulu.
 Yang perlu diunduh dari Drive:
 
 ```
-models/indobert/
+models/indobert_real/
 ├── config.json
 ├── model.safetensors
 ├── tokenizer.json
@@ -257,7 +258,8 @@ models/indobert/
 └── val_predictions.csv
 ```
 
-Letakkan di `models/indobert/` pada repo lokal (folder ini gitignored). Setelah
+Letakkan di `models/indobert_real/` (dan `indobert_aug/` untuk B) pada repo
+lokal; folder ini gitignored. Setelah
 itu evaluasi dijalankan di laptop, bukan di Colab:
 
 ```bash
@@ -271,7 +273,7 @@ python -m cyberbully.evaluate --split val
 
 # 3. test SEKALI dengan threshold hasil tuning
 python -m cyberbully.evaluate --split test \
-    --threshold <angka dari out/threshold.json> \
+    --threshold <angka dari out/model_a/threshold.json> \
     --confirm-test
 ```
 
@@ -291,17 +293,23 @@ npm install
 npm run dev
 ```
 
-API memuat model sekali saat startup. Kalau `models/indobert` belum ada,
-`GET /health` mengembalikan `model_loaded: false` dan `POST /predict`
-mengembalikan **503**, bukan crash.
+API memuat dua model saat startup: A (real-only) dan B (asli + sintetis).
+Default A `models/indobert_real`, B `models/indobert_aug`.
 
-Setelah training, model ada di folder `--out` (misalnya `models/indobert`).
-Kalau ingin memakai model lain, arahkan environment variable sebelum menjalankan
-uvicorn:
+- `GET /health` → `model_loaded` dan `models: {"a": bool, "b": bool}`.
+- `POST /predict?model=a|b` → satu model.
+- `POST /compare` → kedua model sekaligus.
+- Jika salah satu model belum ada, `/compare` → **503**, bukan crash.
+
+Arahkan folder lain lewat environment variable:
 
 ```bash
-CYBERBULLY_MODEL_DIR=models/indobert_aug uvicorn api.main:app --reload
+CYBERBULLY_MODEL_A=models/indobert_real \
+CYBERBULLY_MODEL_B=models/indobert_aug \
+    uvicorn api.main:app --reload
 ```
+
+Panduan full training A/B: [`colab_full_training.md`](colab_full_training.md).
 
 ## 11. MPS (Mac) vs CUDA (Colab)
 
@@ -337,7 +345,7 @@ argumen device.
 ## 13. Checklist sebelum menutup tab
 
 - [ ] `run_meta.json`, `val_metrics.json`, dan `val_predictions.csv` ada di Drive.
-- [ ] Checkpoint terakhir ada di `models/indobert/checkpoints/`.
+- [ ] Checkpoint terakhir A/B ada di folder `checkpoints/` masing-masing.
 - [ ] Tidak ada test set yang dievaluasi tanpa `--confirm-test`.
 - [ ] Waktu per epoch dan versi `transformers` dicatat di `agent/memory.md`.
 - [ ] Jika memakai augmentasi, `check_synthetic.py` lolos dan eval/test tetap data asli.

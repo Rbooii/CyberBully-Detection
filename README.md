@@ -5,6 +5,7 @@ IndoBERT. Task klasifikasi biner: `bully` (1) / `non-bully` (0), termasuk
 tantangan sindiran tanpa kata kasar.
 
 **Panduan lengkap dari nol:** [`docs/guide.md`](docs/guide.md).
+**Full training Colab A/B:** [`docs/colab_full_training.md`](docs/colab_full_training.md).
 
 ## Status
 
@@ -12,8 +13,8 @@ tantangan sindiran tanpa kata kasar.
 |---|---|
 | Pipeline data | Selesai: encoding aman, repair emoji, label union, dedup sebelum split |
 | Baseline TF-IDF + LogReg | Selesai; referensi validation F1 bully **0,881** |
-| IndoBERT | Pernah dilatih 3 epoch (F1 validation **0,926**); artefak lokal dihapus, latih ulang via guide |
-| API FastAPI | Selesai dan pernah diuji 200/422/503; butuh model untuk berjalan |
+| IndoBERT | Dua kandidat: A real-only (referensi F1 **0,926**) dan B asli+sintetis; artefak lokal dihapus, latih ulang via guide |
+| API FastAPI | Selesai; mendukung dua model dan `/compare`; butuh model untuk berjalan |
 | Frontend `interface/` | Selesai; `npm install` sebelum `npm run dev` |
 | Notebook 00–06, 99 | Selesai; butuh data/model untuk dijalankan |
 | Augmentasi sintetis | Generator siap; CSV dihapus saat reset |
@@ -30,8 +31,9 @@ bukan jaminan hasil berikutnya.
 | Model | Threshold | Accuracy | Precision bully | Recall bully | F1 bully |
 |---|---|---|---|---|---|
 | TF-IDF + Logistic Regression | 0,40 | 0,865 | 0,860 | 0,903 | 0,881 |
-| IndoBERT final 3 epoch | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
-| IndoBERT final (threshold tuned) | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
+| IndoBERT A — real-only | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
+| IndoBERT A — threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
+| IndoBERT B — asli + sintetis | belum ada | — | — | — | — |
 
 Split yang sama, seed 42, validation 1.300 baris (723 positif). Selisih F1 0,003
 antara threshold 0,5 dan 0,42 kecil; jangan mengklaim peningkatan berarti.
@@ -83,19 +85,22 @@ python -m cyberbully.train \
     --model hf-internal-testing/tiny-random-BertForSequenceClassification \
     --subset 256 --epochs 1 --batch-size 16 --max-length 64 --out models/smoke
 
-# 5. training (lebih disarankan di Colab)
-python -m cyberbully.train --batch-size 16 --max-length 128 --class-weights
+# 5. training model A (real-only; lebih disarankan di Colab)
+python -m cyberbully.train --batch-size 16 --max-length 128 --class-weights \
+    --out models/indobert_real
 
-# 6. evaluasi validation
-python -m cyberbully.evaluate --split val
+# 6. evaluasi validation A
+python -m cyberbully.evaluate --model-dir models/indobert_real \
+    --split val --out-dir out/model_a
 
-# 7. test sekali setelah threshold dari validation
-python -m cyberbully.evaluate --split test --threshold <hasil-tuning> --confirm-test
+# 7. test A sekali setelah threshold dari validation
+python -m cyberbully.evaluate --model-dir models/indobert_real --split test \
+    --threshold <hasil-tuning> --out-dir out/model_a --confirm-test
 ```
 
-Training penuh di Mac ini sempat berjalan satu epoch lalu dihentikan di tengah
-epoch kedua (Mac tanpa fan). Panduan memindahkannya ke GPU T4:
-[`docs/colab.md`](docs/colab.md).
+Model B dilatih dengan `--train-file data/processed/train_augmented.csv` dan
+`--out models/indobert_aug`. Panduan lengkap dua model di GPU T4:
+[`docs/colab_full_training.md`](docs/colab_full_training.md).
 
 ## API dan frontend
 
@@ -107,9 +112,11 @@ uvicorn api.main:app --reload
 cd interface && npm install && npm run dev
 ```
 
-- `POST /predict` → `label`, `score`, `bully_probability`.
-- `GET /health` → `status`, `model_loaded`.
-- Model belum ada → **503**; input invalid → **422**.
+- `POST /compare` → hasil Model A dan B sekaligus.
+- `POST /predict?model=a` atau `?model=b` → hasil satu model.
+- `GET /health` → `status`, `model_loaded`, dan `models` per A/B.
+- Model A default `models/indobert_real`; B `models/indobert_aug`.
+- Model belum lengkap → **503**; input invalid → **422**.
 - CORS hanya `http://localhost:5173` dan `http://127.0.0.1:5173`.
 
 Detail frontend ada di [`interface/README.md`](interface/README.md).
@@ -137,7 +144,7 @@ src/cyberbully/   config, preprocess, data, runtime, metrics, baseline,
                   synthetic, train, evaluate, predict
 api/              FastAPI: /predict, /health
 interface/        frontend Vite + React + TypeScript strict
-docs/             guide.md, dataset.md, colab.md
+docs/             guide.md, colab_full_training.md, dataset.md, colab.md
 scripts/          generate/check/augment synthetic, reset_generated
 notebooks/        00 setup, 01 EDA, 02 baseline, 03 error analysis,
                   04 comparison, 05 threshold, 06 Colab training, 99 report

@@ -33,6 +33,11 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
     --model hf-internal-testing/tiny-random-BertForSequenceClassification \
     --subset 128 --epochs 1 --batch-size 8 --max-length 32 --out models/smoke
 
+# full training A (real-only)
+/Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.train \
+    --batch-size 16 --max-length 128 --class-weights \
+    --out models/indobert_real
+
 # augmentasi sintetis (hanya train)
 /Users/arcozkwn/.venvs/ml/bin/python scripts/generate_synthetic.py
 /Users/arcozkwn/.venvs/ml/bin/python scripts/check_synthetic.py
@@ -45,6 +50,8 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
 
 # API + frontend
 uvicorn api.main:app --reload
+curl -s -X POST http://127.0.0.1:8000/compare \
+  -H 'Content-Type: application/json' -d '{"text":"dasar bodoh"}'
 cd interface && npm run dev
 
 # test (addopts sudah -q; jangan tambah -q lagi)
@@ -60,8 +67,9 @@ cd interface && npm run dev
 - `models/`, `out/`, `data/processed/`, CSV `data/synthetic/`, dan
   `interface/node_modules` sudah dihapus.
 - Yang tetap ada: `data/raw/re_dataset.csv`, `data/eval/`, kode, docs, `.gitkeep`.
-- Angka referensi run sebelumnya: baseline F1 val 0,881; IndoBERT 3 epoch F1 val
-  0,926 (threshold 0,5); threshold 0,42 → F1 0,929. Ini bukan jaminan hasil baru.
+- Angka referensi run sebelumnya: baseline F1 val 0,881; IndoBERT A 3 epoch F1
+  val 0,926 (threshold 0,5); threshold A 0,42 → F1 0,929. Model B belum ada
+  angkanya. Ini bukan jaminan hasil baru.
 - Untuk membangun ulang semuanya, ikuti `docs/guide.md` dari langkah 2.
 - API akan 503 sampai model dilatih ulang.
 - `data/synthetic/synthetic_train.csv` dan `train_augmented.csv` harus dibuat
@@ -69,11 +77,13 @@ cd interface && npm run dev
 
 ## Colab
 
-- Panduan end-to-end: `docs/guide.md`; detail Colab: `docs/colab.md`.
+- Panduan end-to-end: `docs/guide.md`; detail Colab: `docs/colab.md`; full
+  training A/B: `docs/colab_full_training.md`.
 - `06` memakai `RUN_FULL = IN_COLAB`; di Colab otomatis training, di Mac skip.
 - Untuk melanjutkan setelah disconnect: `RESUME = True`.
 - Device otomatis CUDA > MPS > CPU; T4 memakai fp16 dan workers 2.
-- Setelah selesai, unduh `models/indobert` ke laptop dan evaluasi lokal.
+- Setelah selesai, unduh `models/indobert_real` dan `models/indobert_aug` ke
+  laptop dan evaluasi lokal.
 
 ## Konvensi repo
 
