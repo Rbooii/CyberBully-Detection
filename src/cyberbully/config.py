@@ -8,6 +8,7 @@ DATA_DIR = ROOT / "data"
 DATA_RAW = DATA_DIR / "raw"
 DATA_PROCESSED = DATA_DIR / "processed"
 DATA_EVAL = DATA_DIR / "eval"
+DATA_SYNTHETIC = DATA_DIR / "synthetic"
 
 MODELS_DIR = ROOT / "models"
 OUT_DIR = ROOT / "out"
