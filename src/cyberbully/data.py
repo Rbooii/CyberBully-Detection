@@ -187,6 +187,51 @@ def save_splits(
     return paths
 
 
+def read_frame(path: Path) -> pd.DataFrame:
+    """Baca CSV berlabel dan pastikan kolom teks serta label ada."""
+    if not path.exists():
+        raise FileNotFoundError(f"{path} tidak ada")
+
+    frame = pd.read_csv(path)
+    missing = {TEXT_COLUMN, LABEL_COLUMN} - set(frame.columns)
+    if missing:
+        raise ValueError(f"{path} kehilangan kolom: {', '.join(sorted(missing))}")
+    return frame
+
+
+def read_split(data_dir: Path, name: str) -> pd.DataFrame:
+    """Baca salah satu split hasil `prepare` dan pastikan kolomnya lengkap."""
+    path = data_dir / f"{name}.csv"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} tidak ada; jalankan `python -m cyberbully.data` dulu"
+        )
+    return read_frame(path)
+
+
+def stratified_subset(
+    frame: pd.DataFrame,
+    size: int | None,
+    seed: int = SEED,
+) -> pd.DataFrame:
+    """Ambil subset stratifikasi untuk smoke test tanpa mengubah split asli."""
+    if size is None or size >= len(frame):
+        return frame
+    if LABEL_COLUMN not in frame or frame[LABEL_COLUMN].value_counts().min() < 2:
+        return frame.sample(n=size, random_state=seed).reset_index(drop=True)
+
+    try:
+        sampled, _ = train_test_split(
+            frame,
+            train_size=size,
+            random_state=seed,
+            stratify=frame[LABEL_COLUMN],
+        )
+    except ValueError:
+        sampled = frame.sample(n=size, random_state=seed)
+    return sampled.reset_index(drop=True)
+
+
 def prepare(
     input_path: Path,
     text_col: str,

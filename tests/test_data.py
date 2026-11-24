@@ -8,7 +8,9 @@ from cyberbully.data import (
     map_labels,
     prepare,
     read_csv_auto,
+    read_frame,
     split_dataset,
+    stratified_subset,
     validate_splits,
 )
 
@@ -149,3 +151,25 @@ def test_prepare_keeps_support_columns(tmp_path) -> None:
 
     for part in splits.values():
         assert list(part.columns) == [TEXT_COLUMN, LABEL_COLUMN, "HS", "Abusive"]
+
+
+def test_stratified_subset_keeps_classes_and_is_deterministic() -> None:
+    df = binary_frame()
+    first = stratified_subset(df, 20, seed=42)
+    second = stratified_subset(df, 20, seed=42)
+
+    assert len(first) == 20
+    assert set(first[LABEL_COLUMN].unique()) == {0, 1}
+    assert_frame_equal(first, second)
+
+
+def test_stratified_subset_returns_full_frame_when_size_too_large() -> None:
+    df = binary_frame()
+    assert stratified_subset(df, 10_000) is df
+
+
+def test_read_frame_requires_text_and_label(tmp_path) -> None:
+    path = tmp_path / "missing_label.csv"
+    path.write_text("text\nhalo\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="label"):
+        read_frame(path)

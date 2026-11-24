@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 import torch
 import transformers
-from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from torch import nn
 from torch.utils.data import Dataset
@@ -34,11 +33,11 @@ from .config import (
     LABEL_NAMES,
     MAX_LENGTH,
     MODELS_DIR,
-    OUT_DIR,
     ROOT,
     SEED,
     TEXT_COLUMN,
 )
+from .data import read_split, stratified_subset
 from .metrics import binary_metrics, probabilities_from_logits
 from .runtime import (
     dataloader_workers,
@@ -88,40 +87,6 @@ class WeightedLossTrainer(Trainer):
         weights = self.class_weights.to(outputs.logits.device)
         loss = nn.functional.cross_entropy(outputs.logits, labels, weight=weights)
         return (loss, outputs) if return_outputs else loss
-
-
-def _read_split(data_dir: Path, name: str) -> pd.DataFrame:
-    path = data_dir / f"{name}.csv"
-    if not path.exists():
-        raise FileNotFoundError(
-            f"{path} tidak ada; jalankan `python -m cyberbully.data` dulu"
-        )
-
-    frame = pd.read_csv(path)
-    missing = {TEXT_COLUMN, LABEL_COLUMN} - set(frame.columns)
-    if missing:
-        raise ValueError(f"{path} kehilangan kolom: {', '.join(sorted(missing))}")
-    return frame
-
-
-def _stratified_subset(frame: pd.DataFrame, size: int | None, seed: int) -> pd.DataFrame:
-    if size is None or size >= len(frame):
-        return frame
-
-    counts = frame[LABEL_COLUMN].value_counts()
-    if len(counts) < 2 or counts.min() < 2:
-        return frame.sample(n=size, random_state=seed).reset_index(drop=True)
-
-    try:
-        sampled, _ = train_test_split(
-            frame,
-            train_size=size,
-            random_state=seed,
-            stratify=frame[LABEL_COLUMN],
-        )
-    except ValueError:
-        sampled = frame.sample(n=size, random_state=seed)
-    return sampled.reset_index(drop=True)
 
 
 def _compute_metrics(eval_pred) -> dict[str, float | int | list[list[int]]]:
@@ -187,8 +152,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if use_fp16 and not supports_fp16(device):
         raise ValueError("fp16 hanya didukung di CUDA, bukan MPS/CPU")
 
-    train_frame = _stratified_subset(_read_split(args.data_dir, "train"), args.subset, args.seed)
-    val_frame = _read_split(args.data_dir, "val")
+    train_frame = stratified_subset(read_split(args.data_dir, "train"), args.subset, args.seed)
+    val_frame = read_split(args.data_dir, "val")
     if train_frame.empty or val_frame.empty:
         raise ValueError("train atau val kosong; periksa hasil split")
 
@@ -275,14 +240,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
 
-    pd.DataFrame(
-        {
-            TEXT_COLUMN: val_frame[TEXT_COLUMN].to_numpy(),
-            LABEL_COLUMN: val_frame[LABEL_COLUMN].to_numpy(),
-            "probability": probabilities,
-            "prediction": (probabilities >= 0.5).astype(int),
-        }
-    ).to_csv(output_dir / "val_predictions.csv", index=False)
+    predictions = val_frame.copy()
+    predictions["probability"] = probabilities
+    predictions["prediction"] = (probabilities >= 0.5).astype(int)
+    predictions.to_csv(output_dir / "val_predictions.csv", index=False)
 
     _write_json(output_dir / "val_metrics.json", val_metrics)
     _write_json(output_dir / "train_log.json", {"log_history": trainer.state.log_history})
