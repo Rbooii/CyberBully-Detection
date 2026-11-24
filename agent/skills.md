@@ -37,6 +37,8 @@ uv pip install --python /Users/arcozkwn/.venvs/ml/bin/python -e ".[api,dev]"
 /Users/arcozkwn/.venvs/ml/bin/python scripts/generate_synthetic.py
 /Users/arcozkwn/.venvs/ml/bin/python scripts/check_synthetic.py
 /Users/arcozkwn/.venvs/ml/bin/python scripts/augment_train.py
+/Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.train \
+    --train-file data/processed/train_augmented.csv --out models/indobert_aug
 
 # evaluasi validation
 /Users/arcozkwn/.venvs/ml/bin/python -m cyberbully.evaluate --split val

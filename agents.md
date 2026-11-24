@@ -85,7 +85,8 @@ python -m cyberbully.baseline
 python scripts/generate_synthetic.py
 python scripts/check_synthetic.py
 python scripts/augment_train.py
-python -m cyberbully.train --train-file data/processed/train_augmented.csv
+python -m cyberbully.train --train-file data/processed/train_augmented.csv \
+    --out models/indobert_aug
 
 # training: smoke dulu, baru penuh
 python -m cyberbully.train \

@@ -51,7 +51,8 @@ python scripts/augment_train.py
 
 # train dengan data augmentasi
 python -m cyberbully.train --train-file data/processed/train_augmented.csv \
-    --batch-size 16 --max-length 128 --class-weights
+    --batch-size 16 --max-length 128 --class-weights \
+    --out models/indobert_aug
 ```
 
 Rencana eksperimen: model A (real saja, F1 val 0,926) vs model B (real + 15k

@@ -219,6 +219,10 @@ Bandingkan dengan model real-only pada validation yang sama. Pilih model dari
 validation, bukan eval set. Jika F1 validation turun, jangan pakai model
 augmentasi; laporkan hasilnya apa adanya.
 
+Di `notebooks/06_colab_training.ipynb`, set `RUN_AUGMENTED = True` pada sel
+runtime. Model B disimpan terpisah di `models/indobert_aug`, sehingga model final
+real-only di `models/indobert` tidak tertimpa.
+
 Batasan: data sintetis dibuat dari pola/template, lebih pendek dari tweet asli,
 dan labelnya berasal dari aturan generator. Jangan mengklaim performa dari data
 sintetis; klaim akhir tetap dari test set nyata dan eval set manual.
