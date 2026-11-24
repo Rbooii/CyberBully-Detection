@@ -6,6 +6,11 @@ export interface Prediction {
   bully_probability: number
 }
 
+export interface Comparison {
+  a: Prediction
+  b: Prediction
+}
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -21,14 +26,14 @@ export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000')
   '',
 )
 
-export async function predictText(
+export async function compareText(
   text: string,
   signal: AbortSignal,
-): Promise<Prediction> {
+): Promise<Comparison> {
   let response: Response
 
   try {
-    response = await fetch(`${API_URL}/predict`, {
+    response = await fetch(`${API_URL}/compare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
@@ -46,7 +51,7 @@ export async function predictText(
 
   if (response.status === 503) {
     throw new ApiError(
-      'Model belum tersedia. Jalankan training, lalu nyalakan ulang API.',
+      'Model A atau B belum tersedia. Latih kedua model, lalu jalankan ulang API.',
       503,
     )
   }
@@ -59,5 +64,5 @@ export async function predictText(
     throw new ApiError(`Permintaan gagal (${response.status}). Coba lagi.`, response.status)
   }
 
-  return (await response.json()) as Prediction
+  return (await response.json()) as Comparison
 }

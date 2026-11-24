@@ -27,10 +27,12 @@ ikut ter-bundle ke browser.
 
 ## Perilaku
 
-- Tombol `Periksa teks` mengirim `POST /predict` dengan `{ "text": ... }`.
-- Hasil menampilkan label (`bully` / `non-bully`), probabilitas kelas bully, dan
-  catatan bahwa label mengikuti ambang model.
-- Model belum tersedia → pesan 503, bukan stack trace.
+- Tombol `Bandingkan teks` mengirim `POST /compare` dengan `{ "text": ... }`.
+- Hasil menampilkan dua panel: Model A (data asli) dan Model B (asli + sintetis),
+  masing-masing label, probabilitas bully, dan bar.
+- Selisih probabilitas B − A ditampilkan sebagai informasi, bukan klaim pemenang.
+- Model A/B dimuat API sekali saat startup; jika salah satu belum ada,
+  `/compare` mengembalikan 503 dan UI menampilkan pesan, bukan stack trace.
 - API tidak bisa dihubungi → pesan koneksi dengan URL yang dipakai.
 - Input kosong atau >2000 karakter dicegah di UI dan divalidasi ulang API (422).
 - CORS API hanya mengizinkan `http://localhost:5173` dan `http://127.0.0.1:5173`.

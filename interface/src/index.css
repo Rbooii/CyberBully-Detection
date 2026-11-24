@@ -77,7 +77,7 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: clamp(2rem, 5vw, 5rem);
   align-items: start;
   padding: clamp(2.25rem, 5vw, 4.5rem) 0 clamp(2rem, 4vw, 3.5rem);
@@ -274,6 +274,68 @@ textarea:focus {
   line-height: 1.55;
 }
 
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.model-panel {
+  min-width: 0;
+  padding-top: 0.85rem;
+  border-top: 2px solid var(--ink);
+}
+
+.model-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.model-name {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.model-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--slate);
+}
+
+.model-panel .verdict-context {
+  margin-top: 1.15rem;
+}
+
+.model-panel .verdict-title {
+  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+}
+
+.model-panel .verdict-prob strong {
+  font-size: clamp(2rem, 3.1vw, 2.7rem);
+}
+
+.model-panel .meter {
+  margin-top: 1rem;
+}
+
+.compare-delta {
+  margin: 1.25rem 0 0;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-note {
+  max-width: 60ch;
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--slate);
+}
+
 .verdict-head {
   display: flex;
   align-items: flex-end;
@@ -384,6 +446,12 @@ textarea:focus {
 
 .api-line {
   word-break: break-all;
+}
+
+@media (max-width: 1100px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {

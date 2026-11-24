@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
-import { API_URL, ApiError, predictText, type Prediction } from './api'
+import { API_URL, ApiError, compareText, type Comparison, type Prediction } from './api'
 
 const MAX_LENGTH = 2000
 
@@ -11,18 +11,24 @@ const EXAMPLES = [
   { label: 'Percakapan biasa', text: 'Semangat terus, besok pasti lebih baik!' },
 ] as const
 
-function ResultPanel({ result }: { result: Prediction }) {
+function ResultPanel({
+  model,
+  subtitle,
+  result,
+}: {
+  model: string
+  subtitle: string
+  result: Prediction
+}) {
   const percent = Math.round(result.bully_probability * 100)
   const isBully = result.label === 'bully'
 
   return (
-    <article className={`verdict ${isBully ? 'is-bully' : 'is-safe'}`} aria-live="polite">
-      <div className="verdict-head">
+    <article className={`model-panel ${isBully ? 'is-bully' : 'is-safe'}`}>
+      <div className="model-head">
         <div>
-          <p className="verdict-context">Hasil pembacaan</p>
-          <h2 className="verdict-title">
-            {isBully ? 'Cenderung bully' : 'Cenderung non-bully'}
-          </h2>
+          <h2 className="model-name">{model}</h2>
+          <p className="model-sub">{subtitle}</p>
         </div>
         <p className="verdict-prob">
           <strong>{percent}</strong>
@@ -31,10 +37,15 @@ function ResultPanel({ result }: { result: Prediction }) {
         </p>
       </div>
 
+      <p className="verdict-context">Hasil pembacaan</p>
+      <h3 className="verdict-title">
+        {isBully ? 'Cenderung bully' : 'Cenderung non-bully'}
+      </h3>
+
       <div
         className="meter"
         role="img"
-        aria-label={`Probabilitas kelas bully ${percent} persen`}
+        aria-label={`${model}: probabilitas kelas bully ${percent} persen`}
       >
         <span className="meter-fill" style={{ width: `${percent}%` }} />
       </div>
@@ -44,16 +55,43 @@ function ResultPanel({ result }: { result: Prediction }) {
       </div>
 
       <p className="fineprint">
-        Label mengikuti ambang model. Angka di atas adalah probabilitas kelas bully,
-        bukan kepastian bahwa komentar melanggar aturan.
+        Label mengikuti ambang model ini. Angka adalah probabilitas kelas bully,
+        bukan kepastian pelanggaran.
       </p>
     </article>
   )
 }
 
+function ComparisonView({ comparison }: { comparison: Comparison }) {
+  const delta = Math.round(
+    (comparison.b.bully_probability - comparison.a.bully_probability) * 100,
+  )
+
+  return (
+    <div className="compare-wrap" aria-live="polite">
+      <div className="compare-grid">
+        <ResultPanel model="Model A" subtitle="Data asli" result={comparison.a} />
+        <ResultPanel
+          model="Model B"
+          subtitle="Data asli + sintetis"
+          result={comparison.b}
+        />
+      </div>
+      <p className="compare-delta">
+        Selisih probabilitas B − A: {delta > 0 ? '+' : ''}
+        {delta} poin persentase.
+      </p>
+      <p className="compare-note">
+        Model B adalah eksperimen augmentasi sintetis. Selisih pada satu teks bukan
+        bukti bahwa B lebih baik; gunakan metrik validation dan test.
+      </p>
+    </div>
+  )
+}
+
 export default function App() {
   const [text, setText] = useState('')
-  const [result, setResult] = useState<Prediction | null>(null)
+  const [comparison, setComparison] = useState<Comparison | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -64,7 +102,7 @@ export default function App() {
   useEffect(() => () => controllerRef.current?.abort(), [])
 
   useEffect(() => {
-    if (!result || !resultRef.current) {
+    if (!comparison || !resultRef.current) {
       return
     }
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -72,11 +110,11 @@ export default function App() {
       behavior: reduceMotion ? 'auto' : 'smooth',
       block: 'nearest',
     })
-  }, [result])
+  }, [comparison])
 
   const canSubmit = text.trim().length > 0 && text.length <= MAX_LENGTH && !isLoading
 
-  async function check() {
+  async function compare() {
     const trimmed = text.trim()
     if (!trimmed || trimmed.length > MAX_LENGTH || isLoading) {
       return
@@ -90,13 +128,13 @@ export default function App() {
     setError(null)
 
     try {
-      const prediction = await predictText(trimmed, controller.signal)
-      setResult(prediction)
+      const result = await compareText(trimmed, controller.signal)
+      setComparison(result)
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === 'AbortError') {
         return
       }
-      setResult(null)
+      setComparison(null)
       setError(
         caught instanceof ApiError
           ? caught.message
@@ -112,27 +150,27 @@ export default function App() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    void check()
+    void compare()
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault()
-      void check()
+      void compare()
     }
   }
 
   function handleChange(value: string) {
     setText(value)
     if (!isLoading) {
-      setResult(null)
+      setComparison(null)
       setError(null)
     }
   }
 
   function applyExample(value: string) {
     setText(value)
-    setResult(null)
+    setComparison(null)
     setError(null)
     textareaRef.current?.focus()
   }
@@ -146,29 +184,27 @@ export default function App() {
 
       <main className="layout">
         <section className="intro" aria-labelledby="page-title">
-          <h1 id="page-title">
-            Periksa satu komentar, lihat apa yang ditangkap model.
-          </h1>
+          <h1 id="page-title">Bandingkan dua model pada teks yang sama.</h1>
           <p className="deck">
-            Model bahasa Indonesia membaca pola hinaan dan ujaran kebencian, lalu
-            mengembalikan probabilitas. Bukan putusan otomatis, bukan pengganti
-            konteks percakapan.
+            Model A dilatih hanya pada komentar asli. Model B dilatih pada data
+            asli ditambah 15.000 contoh sintetis. Keduanya diuji pada validation
+            dan test yang sama.
           </p>
 
           <dl className="facts">
             <div>
-              <dt>Data latih</dt>
-              <dd>12.997 komentar</dd>
+              <dt>Model A</dt>
+              <dd>Data asli</dd>
             </div>
             <div>
-              <dt>Keluaran</dt>
-              <dd>Probabilitas bully</dd>
+              <dt>Model B</dt>
+              <dd>Asli + sintetis</dd>
             </div>
           </dl>
 
           <p className="intro-note">
-            Sindiran halus, kata kasar yang akrab, dan percakapan panjang masih
-            sering salah dibaca. Gunakan hasil ini sebagai bahan pertimbangan.
+            Data sintetis hanya masuk train. Validation dan test tetap komentar
+            asli, sehingga perbandingan tidak menilai hafalan template.
           </p>
         </section>
 
@@ -195,7 +231,7 @@ export default function App() {
 
             <div className="actions">
               <button className="primary" type="submit" disabled={!canSubmit}>
-                {isLoading ? 'Memeriksa…' : 'Periksa teks'}
+                {isLoading ? 'Membandingkan…' : 'Bandingkan teks'}
               </button>
               <p className="shortcut">Ctrl/⌘ + Enter</p>
             </div>
@@ -223,17 +259,17 @@ export default function App() {
               </p>
             ) : null}
 
-            {result ? <ResultPanel result={result} /> : null}
+            {comparison ? <ComparisonView comparison={comparison} /> : null}
 
             {isLoading ? (
               <p className="idle-note" role="status">
-                Membaca teks…
+                Membandingkan kedua model…
               </p>
             ) : null}
 
-            {!result && !error && !isLoading ? (
+            {!comparison && !error && !isLoading ? (
               <p className="idle-note">
-                Hasil akan muncul di sini setelah teks diperiksa.
+                Hasil Model A dan B akan muncul di sini setelah teks diperiksa.
               </p>
             ) : null}
           </div>
@@ -242,8 +278,8 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          Model dilatih pada 12.997 komentar berbahasa Indonesia. Dataset Ibrohim
-          &amp; Budi (2019), CC BY-NC-SA 4.0.
+          Model A: data asli. Model B: data asli + 15.000 contoh sintetis. Dataset
+          Ibrohim &amp; Budi (2019), CC BY-NC-SA 4.0.
         </p>
         <p>
           Hasil adalah probabilitas, bukan putusan. Konteks percakapan, sindiran
