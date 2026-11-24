@@ -21,6 +21,12 @@ class PredictResponse(BaseModel):
     bully_probability: float
 
 
+class CompareResponse(BaseModel):
+    a: PredictResponse
+    b: PredictResponse
+
+
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+    models: dict[str, bool]
