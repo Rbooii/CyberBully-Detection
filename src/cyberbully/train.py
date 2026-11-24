@@ -37,7 +37,7 @@ from .config import (
     SEED,
     TEXT_COLUMN,
 )
-from .data import read_split, stratified_subset
+from .data import read_frame, read_split, stratified_subset
 from .metrics import binary_metrics, probabilities_from_logits
 from .runtime import (
     dataloader_workers,
@@ -117,6 +117,12 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=BASE_MODEL)
     parser.add_argument("--data-dir", type=Path, default=DATA_PROCESSED)
+    parser.add_argument(
+        "--train-file",
+        type=Path,
+        default=None,
+        help="CSV train alternatif, mis. data/processed/train_augmented.csv",
+    )
     parser.add_argument("--out", type=Path, default=MODELS_DIR / "indobert")
     parser.add_argument("--epochs", type=float, default=3.0)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -152,7 +158,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if use_fp16 and not supports_fp16(device):
         raise ValueError("fp16 hanya didukung di CUDA, bukan MPS/CPU")
 
-    train_frame = stratified_subset(read_split(args.data_dir, "train"), args.subset, args.seed)
+    train_source = read_frame(args.train_file) if args.train_file else read_split(args.data_dir, "train")
+    train_frame = stratified_subset(train_source, args.subset, args.seed)
     val_frame = read_split(args.data_dir, "val")
     if train_frame.empty or val_frame.empty:
         raise ValueError("train atau val kosong; periksa hasil split")
@@ -256,6 +263,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "seed": args.seed,
         "max_length": args.max_length,
         "batch_size": args.batch_size,
+        "train_file": str(args.train_file) if args.train_file else None,
         "grad_accum": args.grad_accum,
         "epochs": args.epochs,
         "learning_rate": args.lr,
