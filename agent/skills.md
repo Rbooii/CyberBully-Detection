@@ -49,25 +49,27 @@ cd interface && npm run dev
 
 # test (addopts sudah -q; jangan tambah -q lagi)
 /Users/arcozkwn/.venvs/ml/bin/python -m pytest
+
+# reset artefak turunan (dry-run default)
+/Users/arcozkwn/.venvs/ml/bin/python scripts/reset_generated.py
+/Users/arcozkwn/.venvs/ml/bin/python scripts/reset_generated.py --yes
 ```
 
-## Artefak saat ini
+## Artefak setelah reset (2026-11-25)
 
-- `models/indobert` — model final 3 epoch dari Colab T4. Validation F1 0,926
-  pada threshold 0,5; precision 0,934; recall 0,918.
-- `models/indobert/val_metrics.json` dan `val_predictions.csv` — evaluasi model final.
-- `models/baseline_tfidf.joblib`, `out/baseline_val.json`.
-- `out/threshold.json` — threshold 0,42 dari validation model final (F1 0,929).
-- `data/synthetic/synthetic_train.csv` — 15k sintetis (gitignored), 9k positif
-  + 6k negatif; validator: nol duplikat/PII/overlap.
-- `data/processed/train_augmented.csv` — 25.397 baris (10.397 real + 15k
-  sintetis), belum dipakai training penuh.
-- `data/eval/implicit_eval.csv` — 20 usulan; `evaluate.py` melewati baris
-  `status=usulan` sampai direview pemilik.
+- `models/`, `out/`, `data/processed/`, CSV `data/synthetic/`, dan
+  `interface/node_modules` sudah dihapus.
+- Yang tetap ada: `data/raw/re_dataset.csv`, `data/eval/`, kode, docs, `.gitkeep`.
+- Angka referensi run sebelumnya: baseline F1 val 0,881; IndoBERT 3 epoch F1 val
+  0,926 (threshold 0,5); threshold 0,42 → F1 0,929. Ini bukan jaminan hasil baru.
+- Untuk membangun ulang semuanya, ikuti `docs/guide.md` dari langkah 2.
+- API akan 503 sampai model dilatih ulang.
+- `data/synthetic/synthetic_train.csv` dan `train_augmented.csv` harus dibuat
+  ulang lewat generator sebelum training augmented.
 
 ## Colab
 
-- Panduan: `docs/colab.md`; notebook `00_colab_setup` lalu `06_colab_training`.
+- Panduan end-to-end: `docs/guide.md`; detail Colab: `docs/colab.md`.
 - `06` memakai `RUN_FULL = IN_COLAB`; di Colab otomatis training, di Mac skip.
 - Untuk melanjutkan setelah disconnect: `RESUME = True`.
 - Device otomatis CUDA > MPS > CPU; T4 memakai fp16 dan workers 2.

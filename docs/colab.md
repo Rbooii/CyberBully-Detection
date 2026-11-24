@@ -4,11 +4,13 @@ Panduan ini menjelaskan cara melatih IndoBERT untuk proyek ini dari nol di
 Colab, menyimpan checkpoint ke Google Drive, dan memindahkan hasilnya kembali ke
 laptop. Repo: <https://github.com/Rbooii/CyberBully-Detection>.
 
+**Panduan end-to-end dari nol:** [`docs/guide.md`](guide.md).
+
 Colab dipakai karena MacBook Air M3 ini tanpa fan. Training lokal lewat MPS
 sempat berjalan satu epoch lalu dihentikan di tengah epoch kedua; versi final
-3 epoch sudah dilatih di Colab T4 (F1 validation 0,926) dan diunduh ke
-`models/indobert`. Panduan ini tetap dipakai untuk retraining, augmentasi, atau
-mengulang eksperimen dari nol.
+3 epoch pernah dilatih di Colab T4 (F1 validation 0,926). Artefak model lokal
+sudah direset, jadi panduan ini dipakai untuk melatih ulang dari nol,
+augmentasi, atau mengulang eksperimen.
 
 ## Alur singkat
 
@@ -293,8 +295,9 @@ API memuat model sekali saat startup. Kalau `models/indobert` belum ada,
 `GET /health` mengembalikan `model_loaded: false` dan `POST /predict`
 mengembalikan **503**, bukan crash.
 
-Model final 3 epoch ada di `models/indobert`. Kalau ingin memakai model lain,
-arahkan environment variable sebelum menjalankan uvicorn:
+Setelah training, model ada di folder `--out` (misalnya `models/indobert`).
+Kalau ingin memakai model lain, arahkan environment variable sebelum menjalankan
+uvicorn:
 
 ```bash
 CYBERBULLY_MODEL_DIR=models/indobert_aug uvicorn api.main:app --reload

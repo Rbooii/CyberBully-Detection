@@ -192,3 +192,37 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 2. Bandingkan A vs B di validation; pilih berdasarkan F1 dan subgroup, bukan eval
    set/test.
 3. Review eval set hingga ≥200 final, baru evaluasi test sekali dan isi laporan.
+
+## 2026-11-25 (sesi 5) — Reset artefak dan guide dari nol
+
+**Keputusan**
+
+- Atas permintaan pemilik, semua artefak turunan dihapus: isi `models/`, `out/`,
+  `data/processed/`, CSV `data/synthetic/`, `interface/node_modules`, dan
+  `interface/dist`.
+- `data/raw/re_dataset.csv`, `data/eval/`, kode, docs, dan `.gitkeep`
+  dipertahankan.
+- Dibuat `docs/guide.md` (end-to-end dari nol) dan
+  `scripts/reset_generated.py` (dry-run default, `--yes` untuk hapus).
+- Angka hasil lama tetap dicatat sebagai referensi, bukan jaminan.
+
+**Bukti**
+
+- `reset_generated.py --yes`: 31 path dihapus, termasuk model 487 MB dan
+  `node_modules` 88 MB.
+- `pytest`: 62 passed tanpa model/data processed.
+- Sisa direktori: hanya `.gitkeep`, `data/synthetic/README.md`, raw data, dan eval.
+- Model final tidak ada lagi di laptop; API akan 503 sampai training ulang.
+
+**Terbuka**
+
+- Belum ada model/metrik lokal setelah reset; semua langkah harus diulang dari
+  pipeline data.
+- Eval set masih 20 usulan; test belum dievaluasi.
+- Guide belum diuji dengan eksekusi penuh dari kondisi kosong (baru ditulis).
+
+**Langkah berikutnya**
+
+1. Ikuti `docs/guide.md` dari langkah 1; mulai dari pipeline data.
+2. Jalankan smoke, lalu full training di Colab; unduh model.
+3. Lanjutkan evaluasi validation, threshold, eval set, test sekali, laporan.

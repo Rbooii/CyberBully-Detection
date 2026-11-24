@@ -4,25 +4,28 @@ Deteksi cyberbullying pada komentar berbahasa Indonesia dengan fine-tuning
 IndoBERT. Task klasifikasi biner: `bully` (1) / `non-bully` (0), termasuk
 tantangan sindiran tanpa kata kasar.
 
+**Panduan lengkap dari nol:** [`docs/guide.md`](docs/guide.md).
+
 ## Status
 
 | Bagian | Status |
 |---|---|
 | Pipeline data | Selesai: encoding aman, repair emoji, label union, dedup sebelum split |
-| Baseline TF-IDF + LogReg | Selesai, validation F1 bully **0,881** |
-| IndoBERT | Model final 3 epoch, validation F1 **0,926**; test menunggu eval set final |
-| API FastAPI | Selesai, diuji 200/422/503 dengan model final |
-| Frontend `interface/` | Selesai, build & uji browser; API final diuji via curl |
-| Notebook 00–06, 99 | Selesai dan lolos eksekusi lokal |
-| Augmentasi sintetis | 15k siap (9k positif + 6k negatif), model B belum ditraining |
+| Baseline TF-IDF + LogReg | Selesai; referensi validation F1 bully **0,881** |
+| IndoBERT | Pernah dilatih 3 epoch (F1 validation **0,926**); artefak lokal dihapus, latih ulang via guide |
+| API FastAPI | Selesai dan pernah diuji 200/422/503; butuh model untuk berjalan |
+| Frontend `interface/` | Selesai; `npm install` sebelum `npm run dev` |
+| Notebook 00–06, 99 | Selesai; butuh data/model untuk dijalankan |
+| Augmentasi sintetis | Generator siap; CSV dihapus saat reset |
 | Eval set manual | 20 contoh **usulan**, belum final (target ≥200) |
 | Test set | **Belum dievaluasi**; menunggu eval set final dan threshold dibekukan |
-| Laporan `99_report` | Template berisi hasil validation; menunggu test final |
+| Laporan `99_report` | Template berisi hasil referensi; menunggu test final |
 
-Angka di atas adalah validation, bukan test. Model final 3 epoch sudah dilatih di
-Colab T4 dan diunduh ke `models/indobert`; hasil test belum ada.
+Model dan artefak turunan sengaja dihapus dari laptop. Repo tetap menyimpan kode,
+guide, dataset mentah, dan eval set. Angka di bawah berasal dari run sebelumnya,
+bukan jaminan hasil berikutnya.
 
-## Hasil validation
+## Hasil validation (referensi run sebelumnya)
 
 | Model | Threshold | Accuracy | Precision bully | Recall bully | F1 bully |
 |---|---|---|---|---|---|
@@ -134,8 +137,8 @@ src/cyberbully/   config, preprocess, data, runtime, metrics, baseline,
                   synthetic, train, evaluate, predict
 api/              FastAPI: /predict, /health
 interface/        frontend Vite + React + TypeScript strict
-docs/             dataset.md, colab.md
-scripts/          generate_synthetic, check_synthetic, augment_train
+docs/             guide.md, dataset.md, colab.md
+scripts/          generate/check/augment synthetic, reset_generated
 notebooks/        00 setup, 01 EDA, 02 baseline, 03 error analysis,
                   04 comparison, 05 threshold, 06 Colab training, 99 report
 data/raw/         dataset asli (gitignored)

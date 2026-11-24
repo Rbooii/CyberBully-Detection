@@ -36,7 +36,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── README.md
 ├── pyproject.toml
 ├── agent/              # skills.md (cara kerja) + memory.md (log keputusan), di-commit
-├── docs/               # dataset.md (lisensi/skema) + colab.md (panduan training)
+├── docs/               # guide.md (end-to-end), dataset.md, colab.md
 ├── data/
 │   ├── raw/            # dataset asli, read-only, gitignored
 │   ├── processed/      # train/val/test.csv, gitignored
@@ -54,7 +54,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 │   ├── train.py        # fine-tuning (HF Trainer)
 │   ├── evaluate.py     # metrik val/test + eval set manual
 │   └── predict.py      # Predictor (dipakai API & notebook)
-├── scripts/            # utilitas CLI sekali pakai (generate/check/augment synthetic)
+├── scripts/            # utilitas CLI: generate/check/augment synthetic, reset artifacts
 ├── api/                # FastAPI: POST /predict, GET /health
 ├── interface/          # Vite + React + TypeScript (frontend)
 ├── models/             # checkpoint hasil training, gitignored
@@ -98,6 +98,10 @@ python -m cyberbully.train --batch-size 16 --class-weights
 
 # evaluasi (test hanya dengan --confirm-test dan threshold dari validation)
 python -m cyberbully.evaluate --split val
+
+# reset artefak (dry-run default)
+python scripts/reset_generated.py
+python scripts/reset_generated.py --yes
 
 # test
 pytest -q
@@ -242,3 +246,5 @@ Dilarang tanpa izin eksplisit:
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
 - [x] API + frontend demo berjalan dengan model final 3 epoch
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)
+
+Catatan 2026-11-25: artefak model, out/, data/processed/, dan CSV sintetis direset. Angka di atas adalah referensi run sebelumnya; ikuti docs/guide.md untuk reproduksi. Raw data dan eval set tetap ada.
