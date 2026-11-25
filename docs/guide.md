@@ -270,7 +270,8 @@ checkpoints/
 ```
 
 Referensi A: accuracy 0,918; precision 0,934; recall 0,918; **F1 bully 0,926**
-pada threshold 0,5. Model B belum punya angka referensi.
+pada threshold 0,5. B2: val F1 0,917 pada threshold 0,5; lebih baik pada kasus
+sulit tetapi lebih rendah secara agregat.
 
 ## 9. Augmentasi sintetis (opsional)
 
@@ -332,8 +333,8 @@ out/model_a/threshold.json
 out/model_b/threshold.json
 ```
 
-Referensi A: threshold 0,42; F1 0,929; recall 0,925; precision 0,933. B belum
-punya angka referensi.
+Referensi A: threshold 0,42; F1 0,929; recall 0,925; precision 0,933. B2:
+threshold 0,5; F1 0,917; lebih baik di kasus sulit, lebih rendah agregat.
 
 ### Test sekali per model
 
@@ -511,7 +512,7 @@ Angka dari run sebelumnya, **bukan jaminan**; hardware/versi bisa mengubah hasil
 | Baseline TF-IDF | 0,40 | 0,865 | 0,860 | 0,903 | 0,881 |
 | IndoBERT A — real-only | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
 | IndoBERT A — threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
-| IndoBERT B — asli + sintetis | belum ada | — | — | — | — |
+| IndoBERT B2 — asli + 20k sintetis | 0,50 | 0,908 | 0,922 | 0,913 | 0,917 |
 
 Test set belum dievaluasi pada run referensi. Eval set manual masih 50 usulan;
 hasil eksplorasi 70% pada contoh sulit **bukan** hasil final.

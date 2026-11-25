@@ -186,7 +186,7 @@ netral, becanda akrab, dan perhatian tulus.
 Kalau gagal, jangan training. Data sintetis hanya untuk train; validation/test
 tetap data asli.
 
-## 7. Full training Model B — real + sintetis
+## 7. Full training Model B2 — real + sintetis bertarget
 
 ```bash
 !python -m cyberbully.train \
@@ -203,7 +203,7 @@ Catatan:
   `data/processed/val.csv`.
 - Jangan arahkan `--out` ke `indobert_real`; model A akan tertimpa.
 - Waktu lebih lama dari A karena train 30.397 baris.
-- Referensi B **belum ada**; jangan menganggap B lebih baik sebelum dibandingkan.
+- B2 dilatih dengan data sintetis 20k; bandingkan per kategori, bukan hanya F1 agregat.
 
 Jika memakai notebook `06_colab_training.ipynb`:
 
@@ -266,7 +266,8 @@ models/indobert_aug/threshold.json
 ```
 
 Dua file terakhir dibaca API saat startup, sehingga label `/predict` dan
-`/compare` memakai threshold beku, bukan 0,5 default.
+`/compare` memakai threshold beku, bukan 0,5 default. Kalau F1 terbaik mentok
+di batas grid atau hanya menang <0,002 dari 0,5, notebook memakai 0,5.
 
 Bandingkan F1, precision, recall, dan confusion matrix di
 `notebooks/04_model_comparison.ipynb`. Pilih model untuk klaim utama dari
@@ -392,7 +393,7 @@ python -m cyberbully.train ... --out <out-yang-sama> --resume
 |---|---|---|---|---|---|
 | A real-only (referensi) | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
 | A tuned (referensi) | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
-| B real+sintetis | belum ada | — | — | — | — |
+| B2 real+20k sintetis | 0,50 | 0,908 | 0,922 | 0,913 | 0,917 |
 
 Angka referensi berasal dari run sebelumnya, bukan jaminan. Bandingkan A dan B
 pada run Anda sendiri dengan split/seed yang sama. Jika B lebih rendah, laporkan

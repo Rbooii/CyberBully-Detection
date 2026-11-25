@@ -13,19 +13,20 @@ tantangan sindiran tanpa kata kasar.
 |---|---|
 | Pipeline data | Selesai: encoding aman, repair emoji, label union, dedup sebelum split |
 | Baseline TF-IDF + LogReg | Selesai; referensi validation F1 bully **0,881** |
-| IndoBERT | A tersedia (`indobert_real`, val F1 **0,926**, threshold 0,42); B v1 dihapus, B2 menunggu retrain |
-| API FastAPI | Selesai; mendukung dua model dan `/compare`; B belum ada |
+| IndoBERT | A: val F1 **0,926** (threshold 0,42). B2: val F1 **0,917** (threshold 0,5) |
+| API FastAPI | Selesai; dua model tersedia, `/compare`, threshold per model |
 | Frontend `interface/` | Selesai; `npm install` sebelum `npm run dev` |
 | Notebook 00–06, 99 | Selesai; butuh data/model untuk dijalankan |
 | Augmentasi sintetis | 20k bertarget sudah dibuat; `train_augmented` 30.397 baris siap |
 | Eval set manual | 50 contoh **usulan**, belum final (target ≥200) |
-| Test set | A pernah dievaluasi (F1 **0,925**); B v1 dihapus; B2 hanya sekali |
-| Laporan `99_report` | Template berisi hasil referensi; menunggu hasil B2 |
+| Test set | A: F1 **0,925** (threshold 0,42). B2: tercatat 0,919 pada 0,05; threshold deploy 0,5 belum di-test ulang |
+| Laporan `99_report` | Template berisi hasil referensi; B2 belum masuk laporan |
 
-Model B v1 dihapus karena gagal di pujian menyindir, sarkasme karya,
-gaslighting, dan body shaming. A tetap ada. Test set sudah pernah dipakai A dan
-B v1; ini keterbatasan yang harus ditulis di laporan. Angka di bawah berasal
-dari run sebelumnya, bukan jaminan hasil berikutnya.
+B2 dilatih dengan 20k sintetis bertarget. Pada uji manual lima kategori sulit,
+B2 memberi p≈1,0 untuk semuanya; A masih 0,002–0,11. Namun F1 validation B2
+lebih rendah dari A. Test B2 pernah dijalankan pada threshold 0,05; setelah
+policy threshold diperbaiki, threshold deploy menjadi 0,5 dan test tidak diulang
+agar tidak menjadi evaluasi kedua. Ini keterbatasan yang harus ditulis.
 
 ## Hasil validation (referensi run sebelumnya)
 
@@ -34,15 +35,15 @@ dari run sebelumnya, bukan jaminan hasil berikutnya.
 | TF-IDF + Logistic Regression | 0,40 | 0,865 | 0,860 | 0,903 | 0,881 |
 | IndoBERT A — real-only | 0,50 | 0,918 | 0,934 | 0,918 | 0,926 |
 | IndoBERT A — threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
-| IndoBERT B — asli + sintetis | belum ada | — | — | — | — |
+| IndoBERT B2 — asli + 20k sintetis | 0,50 | 0,908 | 0,922 | 0,913 | 0,917 |
 
 Split yang sama, seed 42, validation 1.300 baris (723 positif). Selisih F1 0,003
 antara threshold 0,5 dan 0,42 kecil; jangan mengklaim peningkatan berarti.
 
-Catatan kualitatif: contoh sindiran "Wah pintar sekali, sampai salah dua kali."
-masih diprediksi **non-bully** (p=0,048) oleh model final. Ini persis jenis
-kesalahan yang menjadi fokus proyek; jangan menyimpulkan model sudah bagus hanya
-dari F1 validation.
+Catatan kualitatif: B2 mendeteksi kelima contoh sulit (subtweet, backhanded,
+sarkasme karya, gaslighting, body shaming) dengan p≈1,0, sedangkan A gagal.
+Tetapi B2 juga lebih rendah pada F1 validation/test agregat. Ini trade-off yang
+harus dilaporkan, bukan disembunyikan.
 
 ## Augmentasi data sintetis
 

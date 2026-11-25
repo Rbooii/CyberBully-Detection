@@ -313,3 +313,51 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 1. Train B2 di Colab dengan `train_augmented.csv` 30.397 baris.
 2. Unduh B2, evaluasi validation, threshold, eval set per kategori.
 3. Test B2 sekali; bandingkan A/B2 dan tulis hasil apa adanya.
+
+## 2026-11-25 (lanjutan) — B2 selesai, threshold boundary diperbaiki
+
+**Temuan**
+
+- B2 (20k targeted, 30.397 train) mendeteksi lima contoh sulit dengan p≈1,0:
+  subtweet, backhanded, sarkasme karya, gaslighting, body shaming. A tetap gagal
+  di empat dari lima (p 0,002–0,11); hanya subtweet yang juga dikenali B2.
+- F1 validation B2 pada 0,5 = 0,917 (P 0,922, R 0,913), lebih rendah dari A
+  (0,926 / 0,929 tuned). Trade-off: B2 jauh lebih baik di kasus sulit, lebih
+  rendah secara agregat.
+- `choose_threshold` memilih 0,05 karena itu batas bawah grid; F1 0,05 vs 0,5
+  hanya berbeda 0,004 dan precision turun (0,911 vs 0,922). Ini artefak, bukan
+  optimum nyata.
+- API semula memakai threshold 0,5 untuk A/B karena belum membaca file; sudah
+  diperbaiki.
+
+**Keputusan**
+
+- `choose_threshold` sekarang fallback ke 0,5 jika optimum mentok di boundary
+  atau gain F1 < 0,002 dari default. A tetap 0,42 (interior, gain cukup).
+- B2 threshold deploy = 0,5. File `threshold.json` di folder model dibaca API.
+- Test B2 sudah tercatat pada 0,05 (F1 0,919); test pada 0,5 tidak dijalankan
+  ulang agar tidak menjadi evaluasi kedua.
+
+**Bukti**
+
+- `pytest`: 69 passed.
+- API `/health` dengan model nyata: thresholds A 0,42, B 0,5.
+- API `/compare` gaslighting: A p=0,110 non-bully; B p=0,999 bully.
+- Threshold B di `out/model_b/threshold.json` dan `models/indobert_aug/threshold.json`
+  sekarang 0,5, fallback `boundary`, kandidat 0,05.
+
+**Terbuka**
+
+- Eval set 50 masih usulan; akurasi per kategori belum dihitung.
+- Test B2 pada 0,5 belum ada; laporan harus membedakan test 0,05 (tercatat) dan
+  threshold deploy 0,5.
+- B2 masih lebih rendah dari A pada F1 agregat; keputusan model utama menunggu
+  evaluasi per kategori.
+- Test set sudah dipakai A dan B2 (0,05); keterbatasan metodologis harus dicatat.
+
+**Langkah berikutnya**
+
+1. Review 50 eval usulan menjadi `final`, evaluasi A/B2 per kategori.
+2. Putuskan model utama: A (agregat lebih baik) atau B2 (kasus sulit lebih baik).
+3. Tulis laporan dengan trade-off dan keterbatasan test; jangan mengulang test
+   tanpa alasan yang dicatat.

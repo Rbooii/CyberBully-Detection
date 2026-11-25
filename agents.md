@@ -241,13 +241,13 @@ Dilarang tanpa izin eksplisit:
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [x] Baseline TF-IDF selesai (F1 val 0,881)
 - [x] Fine-tuning IndoBERT A selesai (3 epoch, F1 val 0,926); B v1 dihapus
-- [ ] Augmentasi sintetis 20k siap; B2 (real+synthetic) belum ditraining
+- [x] B2 dilatih dengan 20k sintetis bertarget; threshold 0,5; kategori sulit membaik, F1 agregat lebih rendah
 - [ ] Eval set manual ≥ 200 contoh (baru 50 usulan, belum direview)
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
 - [x] API + frontend demo dua model (A/B) selesai; threshold per model
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)
 
-Catatan 2026-11-25: model B v1 dan metrik test-nya dihapus setelah gagal di
-kategori pujian menyindir, sarkasme karya, gaslighting, dan body shaming. Data
-sintetis diganti 20k bertarget. A tetap ada. Test set sudah pernah dipakai A dan
-B v1; B2 hanya boleh dievaluasi sekali dan keterbatasan ini dicatat.
+Catatan 2026-11-25: B2 mendeteksi lima kategori sulit dengan p≈1,0, tetapi F1
+agregat validation lebih rendah dari A. Threshold 0,05 adalah artefak batas grid;
+policy baru memakai 0,5 untuk B2. Test B2 sudah tercatat pada 0,05; test pada 0,5
+belum dijalankan dan tidak boleh diulang tanpa catatan keterbatasan.

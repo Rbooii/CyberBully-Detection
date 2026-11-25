@@ -66,21 +66,21 @@ cd interface && npm run dev
 
 - `models/indobert_real` — model A (real-only) + `threshold.json` 0,42; ini yang
   dipakai API.
-- `models/indobert_aug` — **dihapus**; B v1 gagal di 4 kategori sulit dan akan
-  dilatih ulang sebagai B2 dengan data sintetis baru.
-- `out/model_a` — metrik/test A. `out/model_b` dihapus.
+- `models/indobert_aug` — model B2, threshold `0.5`; mendeteksi lima kategori
+  sulit, tetapi F1 agregat lebih rendah dari A.
+- `out/model_a` dan `out/model_b` — metrik A/B2; test B2 tercatat pada threshold
+  0,05 sebelum policy diubah.
 - `data/synthetic/synthetic_train.csv` — 20.000 baris (14k positif / 6k hard
   negative), termasuk pujian menyindir, sarkasme karya, gaslighting, subtweet,
   body shaming.
 - `data/processed/train_augmented.csv` — 30.397 baris (10.397 real + 20k
-  synthetic), belum dipakai training B2.
+  synthetic), sudah dipakai training B2.
 - `data/eval/implicit_eval.csv` — 50 usulan (20 lama + 30 kategori sulit);
   `evaluate.py` melewati semua baris `usulan`.
-- Test A sudah pernah dievaluasi; test B v1 dihapus. Test B2 baru nanti sekali.
-- Untuk membangun ulang semuanya, ikuti `docs/guide.md` dari langkah 2.
-- API akan 503 sampai model dilatih ulang.
-- `data/synthetic/synthetic_train.csv` dan `train_augmented.csv` harus dibuat
-  ulang lewat generator sebelum training augmented.
+- Test A sudah dievaluasi pada 0,42; B2 tercatat pada 0,05. Threshold deploy B2
+  sekarang 0,5; test pada 0,5 tidak dijalankan ulang.
+- B2/A dapat dijalankan di API; `threshold.json` di folder model menentukan label.
+- Eval set 50 masih usulan; per kategori belum terukur final.
 
 ## Colab
 
