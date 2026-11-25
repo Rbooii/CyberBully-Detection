@@ -133,15 +133,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("test butuh --threshold dari validation, bukan 0.5 default.")
             return 2
 
-    threshold = 0.5 if args.threshold is None else args.threshold
     frame = _read_frame(args.data_dir / f"{args.split}.csv")
 
     predictor = Predictor(
         args.model_dir,
         device=args.device,
         max_length=args.max_length,
-        threshold=threshold,
+        threshold=args.threshold,
     )
+    threshold = predictor.threshold
     probabilities = predictor.predict_proba(frame[TEXT_COLUMN].tolist())
     metrics = binary_metrics(frame[LABEL_COLUMN].to_numpy(), probabilities, threshold)
 
