@@ -5,7 +5,7 @@ Panduan ini khusus untuk **melatih penuh dua model** dari nol di Colab GPU T4:
 | Model | Data train | Output |
 |---|---|---|
 | **A** | 10.397 komentar asli | `models/indobert_real` |
-| **B** | 10.397 asli + 15.000 sintetis | `models/indobert_aug` |
+| **B** | 10.397 asli + 20.000 sintetis | `models/indobert_aug` |
 
 Keduanya memakai validation/test asli yang sama, seed 42, dan hyperparameter
 yang sama. Perbedaan hasil hanya berasal dari augmentasi data train.
@@ -168,9 +168,14 @@ Kalau runtime mati, salin perintah yang sama dan tambahkan `--resume`.
 Output yang diharapkan:
 
 ```
-dataset sintetis: 15000 baris
-train augmented: 25397 baris (10397 real + 15000 synthetic)
+dataset sintetis: 20000 baris
+train augmented: 30397 baris (10397 real + 20000 synthetic)
 ```
+
+Data baru mencakup 14.000 positif: sindiran inti, merendahkan, satir, pujian
+menyindir (backhanded), sarkasme karya, gaslighting, subtweet, dan body shaming.
+Hard negative 6.000: kritik membangun, pujian tulus, permintaan maaf tulus,
+netral, becanda akrab, dan perhatian tulus.
 
 `check_synthetic.py` harus melaporkan:
 
@@ -197,7 +202,7 @@ Catatan:
 - `--train-file` mengganti train saja; validation tetap
   `data/processed/val.csv`.
 - Jangan arahkan `--out` ke `indobert_real`; model A akan tertimpa.
-- Waktu lebih lama dari A karena train 25.397 baris.
+- Waktu lebih lama dari A karena train 30.397 baris.
 - Referensi B **belum ada**; jangan menganggap B lebih baik sebelum dibandingkan.
 
 Jika memakai notebook `06_colab_training.ipynb`:
@@ -256,7 +261,12 @@ terpisah dan menulis:
 ```
 out/model_a/threshold.json
 out/model_b/threshold.json
+models/indobert_real/threshold.json
+models/indobert_aug/threshold.json
 ```
+
+Dua file terakhir dibaca API saat startup, sehingga label `/predict` dan
+`/compare` memakai threshold beku, bukan 0,5 default.
 
 Bandingkan F1, precision, recall, dan confusion matrix di
 `notebooks/04_model_comparison.ipynb`. Pilih model untuk klaim utama dari
@@ -287,7 +297,7 @@ Jangan mengulang test untuk mencari angka yang lebih bagus.
 
 ## 11. Eval set manual
 
-`data/eval/implicit_eval.csv` berisi 20 usulan. Review dan ubah `status`
+`data/eval/implicit_eval.csv` berisi 50 usulan. Review dan ubah `status`
 menjadi `final` sampai ≥200 baris. Baris `usulan` dilewati otomatis.
 
 ```bash
@@ -366,7 +376,7 @@ python -m cyberbully.train ... --out <out-yang-sama> --resume
 - [ ] Split 10.397/1.300/1.300.
 - [ ] Smoke test lolos.
 - [ ] Model A selesai di `indobert_real`.
-- [ ] Synthetic 15k lolos check.
+- [ ] Synthetic 20k lolos check.
 - [ ] Model B selesai di `indobert_aug`.
 - [ ] Kedua model diunduh ke laptop.
 - [ ] Validation A/B dievaluasi.

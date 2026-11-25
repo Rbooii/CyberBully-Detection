@@ -262,3 +262,54 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 2. Unduh kedua model, evaluasi validation, tuning threshold A/B.
 3. Test sekali per model, isi laporan, uji API `/compare` + frontend dengan model
    asli, commit/push.
+
+## 2026-11-25 (lanjutan) — B v1 gagal di kasus sulit, ganti data dan B2
+
+**Temuan**
+
+- B v1 benar-benar memakai train augmented (25.397 baris) dan test F1 0,9293;
+  A test F1 0,9254. Secara agregat B sedikit lebih baik.
+- Namun B v1 gagal di kasus yang menjadi inti proyek:
+  - backhanded compliment: p≈0,000
+  - sarkasme karya: p≈0,000
+  - gaslighting: p≈0,0005
+  - body shaming: p≈0,000
+  - subtweet: p≈0,9999 (justru berhasil)
+- Penyebab: data sintetis v1 tidak punya kategori tersebut, dan frasa
+  "cuma bercanda" dilatih sebagai negatif `kasar_akrab`. Ini kontraproduktif
+  untuk gaslighting.
+- API juga masih memakai threshold 0,5; B v1 dibekukan di 0,17.
+
+**Keputusan**
+
+- Hapus model B v1, `out/model_b`, CSV synthetic v1, dan train_augmented v1.
+- Ganti dengan 20.000 baris: 14.000 positif (termasuk lima kategori sulit) +
+  6.000 hard negative (pujian tulus, permintaan maaf tulus, perhatian tulus,
+  kritik, netral, becanda akrab).
+- Tambah 30 contoh eval `usulan` untuk lima kategori; total eval set 50 usulan.
+- Train ulang **B2 saja**; A tetap.
+- `Predictor` sekarang membaca `threshold.json` dari folder model; API
+  mengembalikan `threshold` dan `/health` menampilkan `thresholds`.
+
+**Bukti**
+
+- Synthetic 20k: 0 duplikat, 0 PII, 0 overlap dengan train/val/test/eval.
+- Augmented train: 30.397 baris (10.397 real + 20.000 synthetic); 19.779
+  positif / 10.618 negatif.
+- `pytest`: 68 passed; frontend typecheck/build/lint sukses.
+- `models/indobert_aug` dan `out/model_b` sudah dihapus; A dan threshold A 0,42
+  tetap.
+
+**Terbuka**
+
+- B2 belum ditraining; belum ada bukti kategori sulit membaik.
+- Eval set 50 usulan belum direview; target ≥200 final.
+- Test set sudah pernah dipakai A dan B v1; evaluasi B2 akan menjadi penggunaan
+  tambahan dan harus ditulis sebagai keterbatasan.
+- API threshold server lama perlu restart agar membaca threshold baru.
+
+**Langkah berikutnya**
+
+1. Train B2 di Colab dengan `train_augmented.csv` 30.397 baris.
+2. Unduh B2, evaluasi validation, threshold, eval set per kategori.
+3. Test B2 sekali; bandingkan A/B2 dan tulis hasil apa adanya.

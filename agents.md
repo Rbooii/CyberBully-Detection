@@ -185,7 +185,7 @@ boleh **memanggil** `python -m cyberbully.train` (lihat `docs/colab.md` dan
 
 ## 10. API dan frontend
 
-- API: `POST /predict?model=a|b` (body `{"text": str}`, 1–2000 karakter) mengembalikan `label`, `score`, `bully_probability`; `POST /compare` mengembalikan `a` dan `b`; `GET /health` mengembalikan `status`, `model_loaded`, dan `models` per A/B. Model A default `models/indobert_real`, B `models/indobert_aug`. Model belum lengkap harus menghasilkan **503**, bukan crash. Input tidak valid menghasilkan **422**.
+- API: `POST /predict?model=a|b` (body `{"text": str}`, 1–2000 karakter) mengembalikan `label`, `score`, `bully_probability`; `POST /compare` mengembalikan `a` dan `b`; `GET /health` mengembalikan `status`, `model_loaded`, `models`, dan `thresholds` per A/B; response prediksi menyertakan `threshold`. Model A default `models/indobert_real`, B `models/indobert_aug`. Model belum lengkap harus menghasilkan **503**, bukan crash. Input tidak valid menghasilkan **422**.
 - Model dimuat sekali saat startup, bukan per request.
 - CORS hanya untuk origin dev (`http://localhost:5173`, `http://127.0.0.1:5173`). Jangan mengubahnya menjadi `*`.
 - Frontend (`interface/`, Vite): React + TypeScript strict. URL API dari `VITE_API_URL`, default `http://localhost:8000`. Tangani state loading dan error. Jangan menampilkan stack trace ke pengguna.
@@ -240,11 +240,14 @@ Dilarang tanpa izin eksplisit:
 - [x] Pipeline tervalidasi di MPS (smoke tiny model; metrik tidak bermakna)
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [x] Baseline TF-IDF selesai (F1 val 0,881)
-- [x] Fine-tuning IndoBERT A selesai (3 epoch, F1 val 0,926); B menunggu training ulang
-- [ ] Augmentasi sintetis 15k siap; model B (real+synthetic) belum ditraining
-- [ ] Eval set manual ≥ 200 contoh (baru 20 usulan, belum direview)
+- [x] Fine-tuning IndoBERT A selesai (3 epoch, F1 val 0,926); B v1 dihapus
+- [ ] Augmentasi sintetis 20k siap; B2 (real+synthetic) belum ditraining
+- [ ] Eval set manual ≥ 200 contoh (baru 50 usulan, belum direview)
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
-- [x] API + frontend demo dua model (A/B) selesai; butuh model untuk berjalan
+- [x] API + frontend demo dua model (A/B) selesai; threshold per model
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)
 
-Catatan 2026-11-25: artefak model, out/, data/processed/, dan CSV sintetis direset. Angka di atas adalah referensi run sebelumnya; ikuti docs/guide.md untuk reproduksi. Raw data dan eval set tetap ada.
+Catatan 2026-11-25: model B v1 dan metrik test-nya dihapus setelah gagal di
+kategori pujian menyindir, sarkasme karya, gaslighting, dan body shaming. Data
+sintetis diganti 20k bertarget. A tetap ada. Test set sudah pernah dipakai A dan
+B v1; B2 hanya boleh dievaluasi sekali dan keterbatasan ini dicatat.

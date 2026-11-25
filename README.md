@@ -13,18 +13,19 @@ tantangan sindiran tanpa kata kasar.
 |---|---|
 | Pipeline data | Selesai: encoding aman, repair emoji, label union, dedup sebelum split |
 | Baseline TF-IDF + LogReg | Selesai; referensi validation F1 bully **0,881** |
-| IndoBERT | Dua kandidat: A real-only (referensi F1 **0,926**) dan B asli+sintetis; artefak lokal dihapus, latih ulang via guide |
-| API FastAPI | Selesai; mendukung dua model dan `/compare`; butuh model untuk berjalan |
+| IndoBERT | A tersedia (`indobert_real`, val F1 **0,926**, threshold 0,42); B v1 dihapus, B2 menunggu retrain |
+| API FastAPI | Selesai; mendukung dua model dan `/compare`; B belum ada |
 | Frontend `interface/` | Selesai; `npm install` sebelum `npm run dev` |
 | Notebook 00–06, 99 | Selesai; butuh data/model untuk dijalankan |
-| Augmentasi sintetis | Generator siap; CSV dihapus saat reset |
-| Eval set manual | 20 contoh **usulan**, belum final (target ≥200) |
-| Test set | **Belum dievaluasi**; menunggu eval set final dan threshold dibekukan |
-| Laporan `99_report` | Template berisi hasil referensi; menunggu test final |
+| Augmentasi sintetis | 20k bertarget sudah dibuat; `train_augmented` 30.397 baris siap |
+| Eval set manual | 50 contoh **usulan**, belum final (target ≥200) |
+| Test set | A pernah dievaluasi (F1 **0,925**); B v1 dihapus; B2 hanya sekali |
+| Laporan `99_report` | Template berisi hasil referensi; menunggu hasil B2 |
 
-Model dan artefak turunan sengaja dihapus dari laptop. Repo tetap menyimpan kode,
-guide, dataset mentah, dan eval set. Angka di bawah berasal dari run sebelumnya,
-bukan jaminan hasil berikutnya.
+Model B v1 dihapus karena gagal di pujian menyindir, sarkasme karya,
+gaslighting, dan body shaming. A tetap ada. Test set sudah pernah dipakai A dan
+B v1; ini keterbatasan yang harus ditulis di laporan. Angka di bawah berasal
+dari run sebelumnya, bukan jaminan hasil berikutnya.
 
 ## Hasil validation (referensi run sebelumnya)
 
@@ -45,8 +46,10 @@ dari F1 validation.
 
 ## Augmentasi data sintetis
 
-Tersedia 15.000 contoh sintetis (9.000 positif, 6.000 hard negative) yang
-**hanya boleh masuk train**. Generator dan validator ada di `scripts/`; CSV-nya
+Tersedia 20.000 contoh sintetis (14.000 positif, 6.000 hard negative) yang
+**hanya boleh masuk train**. Versi baru mencakup pujian menyindir, sarkasme
+karya, gaslighting, subtweet, dan body shaming, dengan hard negative berupa
+pujian/permintaan maaf tulus. Generator dan validator ada di `scripts/`; CSV-nya
 gitignored dan bisa dibuat ulang deterministik dengan seed 42.
 
 ```bash
@@ -60,7 +63,7 @@ python -m cyberbully.train --train-file data/processed/train_augmented.csv \
     --out models/indobert_aug
 ```
 
-Rencana eksperimen: model A (real saja, F1 val 0,926) vs model B (real + 15k
+Rencana eksperimen: model A (real saja, F1 val 0,926) vs model B (real + 20k
 sintetis) pada split/seed/hyperparameter sama. Model dipilih dari validation,
 bukan eval set. Detail komposisi dan batasan ada di
 [`data/synthetic/README.md`](data/synthetic/README.md).
@@ -112,9 +115,9 @@ uvicorn api.main:app --reload
 cd interface && npm install && npm run dev
 ```
 
-- `POST /compare` → hasil Model A dan B sekaligus.
+- `POST /compare` → hasil Model A dan B sekaligus, termasuk `threshold` masing-masing.
 - `POST /predict?model=a` atau `?model=b` → hasil satu model.
-- `GET /health` → `status`, `model_loaded`, dan `models` per A/B.
+- `GET /health` → `status`, `model_loaded`, `models`, dan `thresholds` per A/B.
 - Model A default `models/indobert_real`; B `models/indobert_aug`.
 - Model belum lengkap → **503**; input invalid → **422**.
 - CORS hanya `http://localhost:5173` dan `http://127.0.0.1:5173`.
@@ -151,7 +154,7 @@ notebooks/        00 setup, 01 EDA, 02 baseline, 03 error analysis,
 data/raw/         dataset asli (gitignored)
 data/processed/   train/val/test.csv + train_augmented.csv (gitignored)
 data/synthetic/   data sintetis train (gitignored)
-data/eval/        eval set manual + 20 usulan (di-commit)
+data/eval/        eval set manual + 50 usulan (di-commit)
 agent/            skills.md + memory.md
 models/           checkpoint (gitignored)
 out/              metrik & artefak run (gitignored)

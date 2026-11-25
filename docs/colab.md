@@ -185,7 +185,7 @@ atau turunkan `--max-length 64`.
 
 ## 7b. Augmentasi data sintetis (opsional)
 
-Repo punya generator 15.000 contoh sintetis: 9.000 sindiran/merendahkan/satir dan
+Repo punya generator 20.000 contoh sintetis: 14.000 positif (termasuk lima kategori sulit) dan
 6.000 hard negative (kasar akrab, kritik, netral, pujian). Data ini **hanya untuk
 train**; validation/test tetap data asli.
 
@@ -200,8 +200,8 @@ Di Colab, setelah split data:
 Output yang diharapkan:
 
 ```
-dataset sintetis: 15000 baris
-train augmented: 25397 baris (10397 real + 15000 synthetic)
+dataset sintetis: 20000 baris
+train augmented: 30397 baris (10397 real + 20000 synthetic)
 ```
 
 `check_synthetic.py` harus melaporkan nol duplikat, nol PII, dan nol overlap

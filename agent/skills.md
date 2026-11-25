@@ -62,14 +62,21 @@ cd interface && npm run dev
 /Users/arcozkwn/.venvs/ml/bin/python scripts/reset_generated.py --yes
 ```
 
-## Artefak setelah reset (2026-11-25)
+## Artefak saat ini (2026-11-25)
 
-- `models/`, `out/`, `data/processed/`, CSV `data/synthetic/`, dan
-  `interface/node_modules` sudah dihapus.
-- Yang tetap ada: `data/raw/re_dataset.csv`, `data/eval/`, kode, docs, `.gitkeep`.
-- Angka referensi run sebelumnya: baseline F1 val 0,881; IndoBERT A 3 epoch F1
-  val 0,926 (threshold 0,5); threshold A 0,42 → F1 0,929. Model B belum ada
-  angkanya. Ini bukan jaminan hasil baru.
+- `models/indobert_real` — model A (real-only) + `threshold.json` 0,42; ini yang
+  dipakai API.
+- `models/indobert_aug` — **dihapus**; B v1 gagal di 4 kategori sulit dan akan
+  dilatih ulang sebagai B2 dengan data sintetis baru.
+- `out/model_a` — metrik/test A. `out/model_b` dihapus.
+- `data/synthetic/synthetic_train.csv` — 20.000 baris (14k positif / 6k hard
+  negative), termasuk pujian menyindir, sarkasme karya, gaslighting, subtweet,
+  body shaming.
+- `data/processed/train_augmented.csv` — 30.397 baris (10.397 real + 20k
+  synthetic), belum dipakai training B2.
+- `data/eval/implicit_eval.csv` — 50 usulan (20 lama + 30 kategori sulit);
+  `evaluate.py` melewati semua baris `usulan`.
+- Test A sudah pernah dievaluasi; test B v1 dihapus. Test B2 baru nanti sekali.
 - Untuk membangun ulang semuanya, ikuti `docs/guide.md` dari langkah 2.
 - API akan 503 sampai model dilatih ulang.
 - `data/synthetic/synthetic_train.csv` dan `train_augmented.csv` harus dibuat

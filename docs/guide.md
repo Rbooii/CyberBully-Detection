@@ -210,7 +210,7 @@ Dua model yang dibandingkan:
 | Model | Data train | Output |
 |---|---|---|
 | A | 10.397 komentar asli | `models/indobert_real` |
-| B | 10.397 asli + 15.000 sintetis | `models/indobert_aug` |
+| B | 10.397 asli + 20.000 sintetis | `models/indobert_aug` |
 
 ### Opsi A — Colab T4 (disarankan)
 
@@ -274,7 +274,9 @@ pada threshold 0,5. Model B belum punya angka referensi.
 
 ## 9. Augmentasi sintetis (opsional)
 
-Synthetic **hanya untuk train**. Validation/test tetap data asli.
+Synthetic **hanya untuk train**. Validation/test tetap data asli. Data baru
+mencakup pujian menyindir, sarkasme karya, gaslighting, subtweet, dan body
+shaming, dengan hard negative pujian/permintaan maaf tulus.
 
 ```bash
 python scripts/generate_synthetic.py
@@ -285,8 +287,8 @@ python scripts/augment_train.py
 Output yang diharapkan:
 
 ```
-dataset sintetis: 15000 baris
-train augmented: 25397 baris (10397 real + 15000 synthetic)
+dataset sintetis: 20000 baris
+train augmented: 30397 baris (10397 real + 20000 synthetic)
 ```
 
 `check_synthetic.py` harus melaporkan nol duplikat/PII/overlap. Kalau gagal,
@@ -400,8 +402,9 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8000/predict \
   -H 'Content-Type: application/json' -d '{"text":"   "}'
 ```
 
-`/health` melaporkan model mana yang aktif. Tanpa model lengkap: `/compare`
-→ **503**; input invalid → **422**. CORS hanya `localhost:5173` dan
+`/health` melaporkan model dan threshold yang aktif. `/compare` mengembalikan
+`threshold` tiap model. Tanpa model lengkap: `/compare` → **503**; input invalid
+→ **422**. CORS hanya `localhost:5173` dan
 `127.0.0.1:5173`.
 
 ## 12. Frontend
@@ -488,7 +491,7 @@ ulang.
 - [ ] Baseline dijalankan.
 - [ ] Smoke training lolos (metrik diabaikan).
 - [ ] Full training A (real-only) selesai di `models/indobert_real`.
-- [ ] Synthetic 15k lolos check; train augmented dibuat.
+- [ ] Synthetic 20k lolos check; train augmented dibuat.
 - [ ] Full training B (asli+sintetis) selesai di `models/indobert_aug`.
 - [ ] Validation A dan B dievaluasi.
 - [ ] Threshold A dan B dipilih dari validation masing-masing.
@@ -510,7 +513,7 @@ Angka dari run sebelumnya, **bukan jaminan**; hardware/versi bisa mengubah hasil
 | IndoBERT A — threshold tuned | 0,42 | 0,922 | 0,933 | 0,925 | 0,929 |
 | IndoBERT B — asli + sintetis | belum ada | — | — | — | — |
 
-Test set belum dievaluasi pada run referensi. Eval set manual masih 20 usulan;
+Test set belum dievaluasi pada run referensi. Eval set manual masih 50 usulan;
 hasil eksplorasi 70% pada contoh sulit **bukan** hasil final.
 
 Temuan penting: sindiran "Wah pintar sekali, sampai salah dua kali." masih
