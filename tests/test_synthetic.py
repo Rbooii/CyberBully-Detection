@@ -9,9 +9,9 @@ from cyberbully.synthetic import (
 )
 
 
-def test_default_counts_total_15k() -> None:
-    assert sum(count for _, count in DEFAULT_COUNTS.values()) == 15_000
-    assert sum(label * count for label, count in DEFAULT_COUNTS.values()) == 9_000
+def test_default_counts_total_20k() -> None:
+    assert sum(count for _, count in DEFAULT_COUNTS.values()) == 20_000
+    assert sum(label * count for label, count in DEFAULT_COUNTS.values()) == 14_000
 
 
 def test_generate_is_deterministic_and_unique() -> None:

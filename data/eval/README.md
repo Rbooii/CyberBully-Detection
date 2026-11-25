@@ -14,9 +14,11 @@ tanpa kata kasar. File ini **ditulis manusia**, bukan hasil generate otomatis.
 
 ## Status saat ini
 
-20 baris pertama adalah **usulan** dan semuanya berstatus `usulan`.
-`cyberbully.evaluate` melewati baris berstatus `usulan`, sehingga angka eval set
-tidak muncul sampai Anda review.
+50 baris pertama adalah **usulan** dan semuanya berstatus `usulan`:
+20 usulan awal + 30 usulan untuk lima kategori sulit (pujian menyindir,
+sarkasme karya, gaslighting, subtweet, body shaming). `cyberbully.evaluate`
+melewati baris berstatus `usulan`, sehingga angka eval set tidak muncul sampai
+Anda review.
 
 ## Cara review
 
@@ -32,11 +34,16 @@ kasus yang belum pernah dilihat, bukan mengulang jawaban model.
 
 ```bash
 python -m cyberbully.evaluate --split val \
-    --model-dir models/indobert \
-    --implicit-eval data/eval/implicit_eval.csv
+    --model-dir models/indobert_real \
+    --implicit-eval data/eval/implicit_eval.csv --out-dir out/model_a
+
+python -m cyberbully.evaluate --split val \
+    --model-dir models/indobert_aug \
+    --implicit-eval data/eval/implicit_eval.csv --out-dir out/model_b
 ```
 
-Hasil per kategori ditulis ke `out/implicit_metrics.json` (gitignored).
+Hasil per kategori ditulis ke `out/model_a/implicit_metrics.json` dan
+`out/model_b/implicit_metrics.json` (gitignored).
 
 ## Lisensi
 

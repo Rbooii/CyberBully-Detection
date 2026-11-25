@@ -20,13 +20,20 @@ ORIGIN_COLUMN = "origin"
 CATEGORY_COLUMN = "category"
 
 DEFAULT_COUNTS: dict[str, tuple[int, int]] = {
-    "sindiran": (1, 4_000),
-    "merendahkan": (1, 3_000),
-    "satir": (1, 2_000),
-    "kasar_akrab": (0, 2_000),
+    "sindiran": (1, 3_000),
+    "merendahkan": (1, 2_000),
+    "satir": (1, 1_000),
+    "pujian_menyindir": (1, 2_000),
+    "sarkasme_karya": (1, 2_000),
+    "gaslighting": (1, 1_500),
+    "subtweet": (1, 1_500),
+    "body_shaming": (1, 1_000),
     "kritik": (0, 1_500),
-    "netral": (0, 1_500),
     "pujian": (0, 1_000),
+    "permintaan_maaf": (0, 1_000),
+    "netral": (0, 1_000),
+    "kasar_akrab": (0, 1_000),
+    "perhatian_tulus": (0, 500),
 }
 
 SLOTS: dict[str, list[str]] = {
@@ -48,7 +55,7 @@ SLOTS: dict[str, list[str]] = {
     "julukan": ["si paling teliti", "si paling cepat", "si paling paham", "si profesional", "si rajin", "si paling siap"],
     "kasar": ["bego", "dodol", "goblok", "bodoh", "ngeselin", "usil", "konyol", "geblek", "bloon", "pekok"],
     "afeksi": ["aku kangen", "aku sayang", "aku nggak marah", "tetap temanku", "besok kita main lagi", "jangan lupa makan", "lucu", "nggak apa-apa", "kamu tetap sahabatku", "besok traktir aku ya", "aku nggak bisa marah lama", "kamu tetap yang terbaik", "jangan lupa istirahat"],
-    "alasan_akrab": ["aku kangen", "kita sudah lama nggak ketemu", "tapi aku tetap sayang", "jangan lupa makan", "besok kita main lagi", "nggak usah dipikir", "aku cuma bercanda", "tapi aku tetap suka", "besok kita makan bareng", "jangan lupa balas chat", "aku cuma rindu", "tapi kamu tetap seru"],
+    "alasan_akrab": ["aku kangen", "kita sudah lama nggak ketemu", "tapi aku tetap sayang", "jangan lupa makan", "besok kita main lagi", "nggak usah dipikir", "tapi aku tetap suka", "besok kita makan bareng", "jangan lupa balas chat", "aku cuma rindu", "tapi kamu tetap seru"],
     "bagian": ["pendahuluan", "analisis", "kesimpulan", "metodologi", "presentasi", "laporan", "desain", "kode", "abstrak", "diskusi", "lampiran", "slide"],
     "alasan_kritik": ["kurang data", "belum jelas", "terlalu panjang", "kurang contoh", "belum konsisten", "kurang sumber", "belum ada bukti", "terlalu umum", "kurang fokus"],
     "positif": ["idenya bagus", "strukturnya rapi", "datanya lengkap", "penjelasannya jelas", "usahanya terlihat", "desainnya menarik", "argumennya kuat", "contohnya relevan"],
@@ -71,6 +78,58 @@ SLOTS: dict[str, list[str]] = {
     "sifat": ["sabar", "ramah", "lucu", "tenang", "rajin", "perhatian"],
     "ajukan": ["presentasi meyakinkan", "bicara penuh istilah", "sok sibuk", "rapi di depan", "profesional"],
 }
+
+SLOTS.update(
+    {
+        "pakaian": ["baju itu", "outfit itu", "dress itu", "kemeja itu", "gaya itu", "padu padan itu"],
+        "kondisi_tubuh": ["bentuk badan begitu", "badan seperti itu", "postur begitu", "ukuran itu", "bentuk tubuh itu", "proporsi begitu"],
+        "penampilan": ["penampilannya", "gayanya", "outfit-nya", "riasannya", "model rambutnya", "gaya berpakaianmu"],
+        "kekurangan_fisik": ["badannya kurang proporsional", "posturnya kurang pas", "kulitnya kurang terawat", "bentuknya belum ideal", "proporsinya belum seimbang", "penampilannya kurang rapi"],
+        "prestasi": ["presentasinya", "karyanya", "usahanya", "hasil kerjanya", "proyeknya", "tulisannya"],
+        "kekurangan_hasil": ["masih banyak salahnya", "belum selesai", "banyak kurangnya", "belum rapi", "isinya tipis", "kurang matang"],
+        "pujian_menyindir": ["berani", "percaya diri", "hebat", "keren", "berbakat", "menarik"],
+        "pengecualian": ["sayang aja", "tapi kurang pas", "hanya saja aneh", "tetapi tetap aneh", "sayangnya masih kurang", "tapi ada kurangnya"],
+        "perubahan_fisik": ["makmur", "berisi", "gemuk", "membesar", "melebar", "padat"],
+        "perubahan_bagian": ["membesar", "melebar", "padat", "makin besar", "makin lebar"],
+        "komentar_palsu": ["hati-hati cari baju", "jangan makan banyak", "nanti susah bergerak", "kurangi porsi", "olahraga dulu", "jaga kesehatan"],
+        "karya": ["editannya", "tulisannya", "desainnya", "gambarnya", "videonya", "presentasinya", "karyanya", "hasil kerjanya"],
+        "perbandingan_karya": ["tugas anak SD", "kerjaan pemula", "latihan pertama", "contoh di internet", "buatan mesin", "tugas kelompok asal jadi"],
+        "pujian_karya": ["bagus", "keren", "rapi", "kreatif", "profesional", "menarik"],
+        "waktu_karya": ["berhari-hari", "berbulan-bulan", "setahun", "lama sekali", "berjam-jam", "sampai begadang"],
+        "kekurangan_karya": ["belum jadi", "masih berantakan", "penuh typo", "warnanya norak", "nggak nyambung", "isinya kosong"],
+        "hasil_aneh": ["lupa tujuannya", "bikin bingung", "salah konsep", "nggak bisa dipakai", "bikin malu", "malah merusak"],
+        "reaksi_karya": ["serius?", "ini serius?", "masa sih?", "beneran?", "nggak percaya"],
+        "reaksi_korban": ["baru dibecandain", "baru disindir", "baru dikritik", "baru dikatain", "baru dikit-dikit", "baru ditegur", "baru diingatkan"],
+        "reaksi_maaf": ["tersinggung", "tidak nyaman", "marah", "sedih", "kecewa"],
+        "alasan_gas": ["cuma bercanda", "nggak ada maksud buruk", "kamu yang terlalu serius", "aku nggak nyakitin", "itu cuma candaan", "jangan dibawa serius", "kamu yang salah paham", "aku cuma jujur"],
+        "tindakan_gas": ["bercanda", "nyindir", "ngomong jujur", "menilai", "ngejek dikit", "bercanda dikit", "mengomentari", "mengingatkan"],
+        "reaksi_berlebihan": ["baper", "drama", "sensitif", "dibawa perasaan", "marah", "tersinggung", "kecewa", "sedih"],
+        "sifat_korban": ["sensitif", "baperan", "serius", "gampang tersinggung", "terlalu peka", "drama", "berlebihan"],
+        "sifat_buruk": ["gayanya selangit", "sok paling benar", "sok sibuk", "paling merasa", "sok profesional", "banyak alasan", "sok suci", "paling tahu"],
+        "penampilan_baik": ["aslinya nggak punya apa-apa", "kerjanya biasa aja", "hasilnya nol", "nggak ada isinya", "cuma bisa ngomong", "kemampuannya pas-pasan"],
+        "komentar_subtweet": ["kasihan", "capek lihatnya", "semoga sadar", "nggak usah sok", "malu-maluin", "bikin orang lain malas"],
+        "sindiran_subtweet": ["kelakuannya mirip", "yang sok sibuk itu", "yang suka nyalahin orang", "yang hobi cari alasan", "yang paling merasa"],
+        "akibat_subtweet": ["bikin orang lain repot", "bikin tim kacau", "bikin malu", "nggak ada hasil", "bikin capek", "merusak suasana"],
+        "prestasi_klaim": ["ngaku paling sibuk", "ngaku paling paham", "ngaku paling berpengalaman", "ngaku paling profesional", "ngaku paling teliti"],
+        "kenyataan_subtweet": ["hasilnya nggak ada", "kerjanya berantakan", "deadline lewat", "cuma janji", "detail kecil terlewat", "presentasinya belum siap"],
+        "akibat_fisik": ["susah cari ukuran baju", "susah bergerak", "nggak muat kursi", "cepat lelah", "susah naik tangga", "berisiko sakit"],
+        "saran_palsu": ["kurangi makan", "olahraga dulu", "jangan banyak duduk", "jangan makan malam", "diet dulu", "jangan ngemil"],
+        "komentar_fisik": ["makin besar ya", "kayak balon", "sudah nggak ideal", "bahaya buat kesehatan", "susah dilihat", "kurang enak dipandang"],
+        "alasan_palsu": ["aku cuma peduli", "demi kesehatan", "biar kamu sadar", "aku sayang kamu", "aku nggak bermaksud jahat"],
+        "bagian_tubuh": ["perut", "pipi", "badan", "lengan", "pinggang", "paha"],
+        "kesalahan": ["bercanda berlebihan", "lucu-lucuan soal itu", "ngomong kasar", "nyindir", "membahas penampilanmu", "membuat lelucon yang menyakitkan", "terlalu ikut campur", "meledek penampilan", "membuat lelucon soal fisik", "bercanda soal keluarga"],
+        "dampak": ["menyakiti kamu", "merendahkan kamu", "bikin kamu nggak nyaman", "bikin kamu malu", "menyinggung perasaanmu", "membuatmu sedih", "membuatmu marah"],
+        "perbaikan_diri": ["lebih hati-hati", "berusaha tidak mengulanginya", "menjaga ucapan", "meminta maaf lebih cepat", "mendengarkan dulu", "berpikir sebelum bicara"],
+        "tindakan_perbaikan": ["kuhapus komentarnya", "kubetulkan ucapanku", "kutegur diriku sendiri"],
+        "menegur": ["menegurku", "mengingatkan", "memberi tahu", "mengingatkanku", "menegur dengan baik"],
+        "tawaran": ["diam dulu", "mendengarkan", "memperbaiki", "menjelaskan baik-baik", "mendengarkan keluh kesahmu", "memberi ruang", "memperbaiki keadaan"],
+        "bantuan": ["konsultasi ke dokter", "cari informasi kesehatan", "olahraga bersama", "bicara dengan orang tua", "mencari bantuan", "bicara dengan dokter", "mencari teman support"],
+        "sikap_buruk": ["menghakimi", "memaksa", "merendahkan", "mengomentari tubuhmu", "menyinggung", "bikin risih"],
+        "hal_perhatian": ["kesehatanmu", "kondisimu", "istirahatmu", "makanmu"],
+        "kondisi_perhatian": ["lelah", "nggak nyaman", "sakit", "kurang tidur"],
+        "dukungan": ["teman bicara", "bantuan", "waktu", "tempat cerita"],
+    }
+)
 
 SEEDS: dict[str, list[str]] = {
     "sindiran": [
@@ -99,7 +158,7 @@ SEEDS: dict[str, list[str]] = {
         "Goblok banget sih kamu, kita sudah lama nggak ketemu.",
         "Ngeselin, tapi besok kita main lagi ya.",
         "Dodol, jangan lupa makan.",
-        "Bego ya, aku cuma bercanda.",
+        "Bego ya, besok kita main lagi.",
     ],
     "kritik": [
         "Bagian kesimpulan masih perlu diperjelas karena belum menjawab pertanyaan.",
@@ -123,6 +182,60 @@ SEEDS: dict[str, list[str]] = {
         "Kamu lucu kalau lagi marah.",
     ],
 }
+
+SEEDS.update(
+    {
+        "pujian_menyindir": [
+            "Gayanya keren, sayang bentuk badannya kurang proporsional.",
+            "Salut, presentasinya bagus meskipun isinya banyak yang salah.",
+            "Makin berisi aja, hati-hati susah cari baju.",
+            "Penampilannya rapi, walaupun posturnya kurang pas.",
+            "Berani banget pakai outfit itu, proporsi tubuhnya begitu.",
+        ],
+        "sarkasme_karya": [
+            "Editannya bagus, kayak tugas anak SD yang baru belajar.",
+            "Keren, tulisannya rapi tapi isinya nggak nyambung.",
+            "Desainnya kreatif, sayang warnanya norak.",
+            "Presentasinya profesional, butuh berbulan-bulan ya.",
+            "Ini karya serius? Bikin bingung.",
+        ],
+        "gaslighting": [
+            "Baru dibecandain dikit kok baper, cuma bercanda kali.",
+            "Kamu terlalu sensitif, aku cuma nyindir.",
+            "Nggak usah drama, bercanda itu biasa.",
+            "Aku cuma jujur, kamu yang terlalu serius.",
+            "Jangan dibawa perasaan, itu cuma candaan.",
+        ],
+        "subtweet": [
+            "Ada orang sok sibuk, hasilnya nol. Nggak usah disebut juga tahu.",
+            "Nggak nyebut nama, tapi yang suka nyalahin orang pasti tahu.",
+            "Ada yang ngaku paling paham, tapi pertanyaan dasar pun bingung.",
+            "Orang tertentu sok profesional, kerjanya berantakan.",
+            "Ada ya yang gayanya tinggi, aslinya nggak punya isi.",
+        ],
+        "body_shaming": [
+            "Makin berisi aja, kurangi makan dulu.",
+            "Badanmu makin melebar, kayak balon.",
+            "Kalau perutmu makin besar, coba olahraga.",
+            "Makin berat ya, bahaya buat kesehatan.",
+            "Kamu makin padat, susah cari baju.",
+        ],
+        "permintaan_maaf": [
+            "Maaf ya, aku tadi bercanda berlebihan. Aku nggak bermaksud menyakiti kamu.",
+            "Aku salah karena lucu-lucuan soal itu; maaf, aku akan lebih hati-hati.",
+            "Maaf, komentarku tadi keterlaluan. Aku paham kalau kamu tersinggung.",
+            "Aku minta maaf, bukan maksudku merendahkan. Sudah kuhapus komentarnya.",
+            "Maaf ya, aku terlalu jauh. Terima kasih sudah menegurku.",
+        ],
+        "perhatian_tulus": [
+            "Kalau kamu mau, aku temani konsultasi soal berat badan, tanpa menghakimi.",
+            "Aku peduli kesehatanmu, tapi keputusan tetap di kamu.",
+            "Kalau merasa nggak nyaman, kita bisa cari bantuan dokter bersama.",
+            "Aku nggak maksud mengomentari tubuhmu; kalau mengganggu, maaf.",
+            "Kamu baik-baik saja? Kalau butuh teman bicara, aku ada.",
+        ],
+    }
+)
 
 TEMPLATES: dict[str, list[str]] = {
     "sindiran": [
@@ -233,6 +346,111 @@ TEMPLATES: dict[str, list[str]] = {
     ],
 }
 
+TEMPLATES.update(
+    {
+        "pujian_menyindir": [
+            "Wah, berani banget ya pakai {pakaian} dengan {kondisi_tubuh}, salut sama percaya dirinya.",
+            "{penampilan} keren, sayang {kekurangan_fisik}.",
+            "Salut, {prestasi} bagus meskipun {kekurangan_hasil}.",
+            "{pujian_menyindir} banget, {pengecualian}.",
+            "Makin {perubahan_fisik} ya, {komentar_palsu}.",
+            "Keren, {prestasi} tapi {kekurangan_hasil}.",
+            "{penampilan} bagus, walaupun {kekurangan_fisik}.",
+            "Wah {pujian_menyindir}, {pengecualian}.",
+            "Salut, dengan {kondisi_tubuh} tetap berani pakai {pakaian}.",
+            "{prestasi} oke, sayang {kekurangan_hasil}.",
+            "Bagus sih {prestasi}, tapi {kekurangan_hasil}.",
+            "{pujian_menyindir} sekali, walaupun {kekurangan_fisik}.",
+        ],
+        "sarkasme_karya": [
+            "Bagus banget {karya}, kayak {perbandingan_karya}.",
+            "{karya} {pujian_karya}, butuh {waktu_karya} ya.",
+            "Keren, {karya} tapi {kekurangan_karya}.",
+            "Salut, {karya} sampai {hasil_aneh}.",
+            "Ini {karya}? {reaksi_karya}",
+            "{karya} {pujian_karya}, sayangnya {kekurangan_karya}.",
+            "Wah {pujian_karya}, {karya} kayak {perbandingan_karya}.",
+            "Butuh {waktu_karya} untuk {karya} yang {kekurangan_karya}?",
+            "{karya} {pujian_karya}, tapi {hasil_aneh}.",
+            "Kalau ini {karya}, {perbandingan_karya} lebih rapi.",
+            "{karya} {pujian_karya} sekali, sampai {hasil_aneh}.",
+            "Keren, {karya} {pujian_karya} tapi {kekurangan_karya}.",
+        ],
+        "gaslighting": [
+            "Gitu aja baper, cuma bercanda kali.",
+            "{reaksi_korban} kok sensitif amat, {alasan_gas}.",
+            "Cuma {tindakan_gas}, nggak usah {reaksi_berlebihan}.",
+            "Kamu terlalu {sifat_korban}, aku cuma {tindakan_gas}.",
+            "Nggak usah drama, {tindakan_gas} itu biasa.",
+            "Baperan banget, {tindakan_gas} aja dipikir.",
+            "Aku cuma {tindakan_gas}, jangan {reaksi_berlebihan}.",
+            "Kamu yang salah paham, aku cuma {tindakan_gas}.",
+            "Kalau {reaksi_korban}, itu masalah kamu, bukan aku.",
+            "Jangan {reaksi_berlebihan}, {alasan_gas}.",
+            "Aku cuma {tindakan_gas}, kamu yang {reaksi_berlebihan}.",
+            "Kamu terlalu {sifat_korban}, {alasan_gas}.",
+            "Cuma {tindakan_gas}, kok {reaksi_berlebihan}.",
+            "{reaksi_korban} langsung {reaksi_berlebihan}, {alasan_gas}.",
+            "Kamu {sifat_korban} banget, {alasan_gas}.",
+            "Nggak ada yang salah, kamu yang {reaksi_berlebihan}.",
+        ],
+        "subtweet": [
+            "Ada ya orang yang {sifat_buruk} tapi {penampilan_baik}.",
+            "Ada orang {sifat_buruk}, {komentar_subtweet}.",
+            "Nggak nyebut nama, tapi {sindiran_subtweet} jelas terlihat.",
+            "Ada yang {sifat_buruk} banget, {akibat_subtweet}.",
+            "Orang tertentu itu {sifat_buruk}, {komentar_subtweet}.",
+            "Nggak usah disebut, yang {sifat_buruk} pasti tahu.",
+            "Ada ya yang {prestasi_klaim} tapi {kenyataan_subtweet}.",
+            "Yang {sifat_buruk} itu, {komentar_subtweet}.",
+            "Buat yang {sifat_buruk}, {akibat_subtweet}.",
+            "Ada orang yang {prestasi_klaim}, padahal {kenyataan_subtweet}.",
+            "Ada yang {sifat_buruk}, {komentar_subtweet}.",
+            "Orang tertentu {sifat_buruk} tapi {kenyataan_subtweet}.",
+        ],
+        "body_shaming": [
+            "Makin {perubahan_fisik} aja, hati-hati {akibat_fisik}.",
+            "Badanmu {perubahan_fisik}, {saran_palsu}.",
+            "Kamu {perubahan_fisik}, {komentar_fisik}.",
+            "Kalau {bagian_tubuh} {perubahan_bagian}, {saran_palsu}.",
+            "{komentar_fisik} aja, {alasan_palsu}.",
+            "Makin {perubahan_fisik} ya, {komentar_fisik}.",
+            "{bagian_tubuh}mu {perubahan_bagian}, {saran_palsu}.",
+            "Coba {saran_palsu}, biar {bagian_tubuh} nggak {perubahan_bagian}.",
+        ],
+        "permintaan_maaf": [
+            "Maaf ya, aku tadi {kesalahan}. Aku nggak bermaksud {dampak}.",
+            "Aku salah karena {kesalahan}; maaf, aku akan {perbaikan_diri}.",
+            "Maaf, {kesalahan} itu keterlaluan. Aku paham kalau kamu {reaksi_maaf}.",
+            "Aku minta maaf, bukan maksudku {dampak}. Sudah {tindakan_perbaikan}.",
+            "Maaf ya, aku terlalu jauh. Terima kasih sudah {menegur}.",
+            "Aku sadar {kesalahan} bikin kamu nggak nyaman. Maaf.",
+            "Maaf, aku {kesalahan}. Kalau kamu mau, aku {tawaran}.",
+            "Aku minta maaf untuk {kesalahan}; aku akan {perbaikan_diri}.",
+            "Aku minta maaf karena {kesalahan}. Aku akan {perbaikan_diri}.",
+            "Maaf, aku sadar {kesalahan} bikin kamu {reaksi_maaf}. Aku akan {perbaikan_diri}.",
+            "Aku salah, {kesalahan} itu tidak pantas. Maaf ya.",
+            "Maafkan aku karena {kesalahan}; aku akan {perbaikan_diri} dan {tawaran}.",
+            "Aku minta maaf, {kesalahan} bukan lelucon. Aku akan {perbaikan_diri}.",
+            "Aku tahu {kesalahan} menyakitkan. Maaf, aku akan {perbaikan_diri}.",
+        ],
+        "perhatian_tulus": [
+            "Kalau kamu mau, aku temani {bantuan}, tanpa {sikap_buruk}.",
+            "Aku peduli {hal_perhatian}, tapi keputusan tetap di kamu.",
+            "Kalau merasa {kondisi_perhatian}, kita bisa {bantuan} bersama.",
+            "Aku nggak maksud {dampak}; kalau mengganggu, maaf.",
+            "Kamu baik-baik saja? Kalau butuh {dukungan}, aku ada.",
+            "Aku peduli, tapi aku nggak mau {sikap_buruk}.",
+            "Kalau butuh {dukungan}, aku siap mendengarkan tanpa {sikap_buruk}.",
+            "Aku tahu ini sensitif; aku cuma ingin {hal_perhatian}.",
+            "Kalau kamu mau, kita {bantuan} tanpa {sikap_buruk}.",
+            "Aku nggak akan {sikap_buruk}; keputusan ada di kamu.",
+            "Kalau butuh {dukungan}, aku siap tanpa {sikap_buruk}.",
+            "Aku peduli, tapi bukan untuk {sikap_buruk}.",
+        ],
+    }
+)
+
 PII_PATTERNS = [
     re.compile(r"https?://|www\.", re.IGNORECASE),
     re.compile(r"@\w+"),
@@ -247,6 +465,13 @@ EMOJIS_BY_CATEGORY = {
     "kasar_akrab": ["😅", "🙂", "😬"],
     "netral": ["🙂", "😌", "😅"],
     "pujian": ["🙂", "😌", "✨", "👍"],
+    "pujian_menyindir": ["😅", "🙃", "😬", "🙂"],
+    "sarkasme_karya": ["😅", "🙃", "😬", "😌"],
+    "gaslighting": ["🙂", "🙃", "😌"],
+    "subtweet": ["🙃", "😌", "😬", "😅"],
+    "body_shaming": ["🙂", "😌", "😬"],
+    "permintaan_maaf": ["🙏", "🙂"],
+    "perhatian_tulus": ["🙂", "🙏"],
 }
 
 CONTEXTS = [
@@ -257,7 +482,32 @@ CONTEXTS = [
     "Orang lain pun jadi ikut repot.",
     "Bahkan setelah ditegur, tetap sama.",
 ]
-CONTEXT_CATEGORIES = {"sindiran", "merendahkan", "satir"}
+CONTEXT_CATEGORIES = {"sindiran", "merendahkan", "satir", "sarkasme_karya", "subtweet"}
+
+CATEGORY_CONTEXTS = {
+    "pujian_menyindir": [
+        "Tapi tetap saja dipuji.",
+        "Dan itu katanya perhatian.",
+        "Tapi orang lain ikut tersinggung.",
+        "Sudah sering terjadi seperti ini.",
+        "Bahkan setelah ditegur, tetap sama.",
+        "Padahal aku cuma mengomentari.",
+    ],
+    "gaslighting": [
+        "Padahal yang tersinggung jelas-jelas tersinggung.",
+        "Lalu menyalahkan yang merasa tersinggung.",
+        "Bukan pertama kali dia melakukan ini.",
+        "Sudah sering terjadi seperti ini.",
+        "Bahkan setelah ditegur, tetap sama.",
+        "Orang lain pun jadi ikut bingung.",
+    ],
+    "permintaan_maaf": [
+        "Aku tahu kamu berhak marah.",
+        "Aku akan berusaha lebih baik.",
+        "Terima kasih sudah jujur.",
+        "Aku nggak akan mengulanginya.",
+    ],
+}
 
 
 def _clean(text: str) -> str:
@@ -345,6 +595,8 @@ def generate_synthetic(
             text = _clean(pattern.format(**values))
             if category in CONTEXT_CATEGORIES and rng.random() < 0.45:
                 text = f"{text} {rng.choice(CONTEXTS)}"
+            if category in CATEGORY_CONTEXTS and rng.random() < 0.4:
+                text = f"{text} {rng.choice(CATEGORY_CONTEXTS[category])}"
             if category in EMOJIS_BY_CATEGORY and rng.random() < 0.55:
                 text = f"{text} {rng.choice(EMOJIS_BY_CATEGORY[category])}"
             if not _acceptable(text):
