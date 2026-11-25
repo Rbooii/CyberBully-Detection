@@ -35,7 +35,7 @@ Deteksi cyberbullying pada teks bahasa Indonesia (komentar media sosial) dengan 
 ├── agents.md
 ├── README.md
 ├── pyproject.toml
-├── agent/              # skills.md (cara kerja) + memory.md (log keputusan), di-commit
+├── agent/              # skills.md, memory.md, dan referensi desain frontend
 ├── docs/               # guide.md, colab_full_training.md, dataset.md, colab.md
 ├── data/
 │   ├── raw/            # dataset asli, read-only, gitignored
@@ -241,13 +241,14 @@ Dilarang tanpa izin eksplisit:
 - [x] Dataset dipilih dan label dipetakan (keputusan pemilik)
 - [x] Baseline TF-IDF selesai (F1 val 0,881)
 - [x] Fine-tuning IndoBERT A selesai (3 epoch, F1 val 0,926); B v1 dihapus
-- [x] B2 dilatih dengan 20k sintetis bertarget; threshold 0,5; kategori sulit membaik, F1 agregat lebih rendah
-- [ ] Eval set manual ≥ 200 contoh (baru 50 usulan, belum direview)
+- [x] B2 dilatih dengan 20k sintetis bertarget; eval set 40 final: B2 F1 0,897 vs A 0,412; gaslighting belum final
+- [ ] Eval set manual ≥ 200 contoh (40 final, 10 usulan)
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
 - [x] API + frontend demo dua model (A/B) selesai; threshold per model
 - [ ] `99_report` terisi (template sudah memuat validation; test belum final)
 
-Catatan 2026-11-25: B2 mendeteksi lima kategori sulit dengan p≈1,0, tetapi F1
-agregat validation lebih rendah dari A. Threshold 0,05 adalah artefak batas grid;
-policy baru memakai 0,5 untuk B2. Test B2 sudah tercatat pada 0,05; test pada 0,5
-belum dijalankan dan tidak boleh diulang tanpa catatan keterbatasan.
+Catatan 2026-11-25: B2 unggul di eval set manual (F1 0,897 vs A 0,412) dan
+mendeteksi lima kategori sulit, tetapi F1 agregat validation lebih rendah dari A.
+Threshold 0,05 adalah artefak batas grid; policy baru memakai 0,5 untuk B2. Test
+B2 tercatat pada 0,05; test pada 0,5 belum dijalankan dan tidak boleh diulang
+tanpa mencatat keterbatasan.

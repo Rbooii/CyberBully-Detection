@@ -361,3 +361,42 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 2. Putuskan model utama: A (agregat lebih baik) atau B2 (kasus sulit lebih baik).
 3. Tulis laporan dengan trade-off dan keterbatasan test; jangan mengulang test
    tanpa alasan yang dicatat.
+
+## 2026-11-25 (lanjutan) — Evaluasi eval set dan redesign frontend
+
+**Temuan**
+
+- Eval set setelah review: 40 `final`, 10 `usulan` (gaslighting 5, sarkasme karya
+  3, body shaming 1, becanda akrab 1).
+- `evaluate.py` bug: default threshold 0,5 dipaksa dan mengabaikan
+  `threshold.json` model. Sudah diperbaiki; A dievaluasi di 0,42, B2 di 0,5.
+- Hasil eval set 40 final:
+  - A: accuracy 0,500; P 1,000; R 0,259; F1 0,412.
+  - B2: accuracy 0,850; P 0,839; R 0,963; F1 0,897.
+- Per kategori: B2 unggul di pujian menyindir, body shaming, sarkasme karya,
+  subtweet, dan merendahkan. A hanya unggul/bersih di hinaan langsung, kritik,
+  netral, opini, keluhan. B2 menimbulkan false positive pada kritik/netral.
+- Gaslighting belum dihitung karena semua barisnya masih `usulan`.
+- File eval CSV sempat rusak saat disimpan (spasi sebelum quote); sudah
+  dirapikan tanpa mengubah isi/label.
+
+**Frontend**
+
+- Redesign mengikuti `agent/design.md`, `agent/DESIGN_GUIDE.md`, dan
+  `agent/globals.css`: Geist Sans/Mono, token OKLCH monokrom, sidebar desktop,
+  drawer mobile, theme switch, tombol ink, panel hasil flat, mono metadata.
+- Light/dark dan mobile sudah diuji lewat browser; build/typecheck/lint sukses.
+- Halaman memakai `/compare` dan menampilkan threshold tiap model.
+
+**Terbuka**
+
+- 10 eval usulan belum final; gaslighting belum terukur.
+- Test B2 pada 0,5 belum ada; test B2 tercatat pada 0,05. Ini keterbatasan.
+- Model utama belum diputuskan: A unggul agregat, B2 unggul kasus sulit.
+- `99_report` sudah memuat tabel eval set; keputusan model utama belum ditulis.
+
+**Langkah berikutnya**
+
+1. Review 10 usulan tersisa, terutama gaslighting; evaluasi ulang eval set.
+2. Pilih model utama sesuai tujuan proyek dan tulis trade-off.
+3. Isi `99_report`, update README, commit/push.

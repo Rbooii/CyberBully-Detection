@@ -1,51 +1,51 @@
 text,label,category,status
-"Dasar bodoh, kerjaan kayak gini aja nggak becus.",1,hinaan_langsung,usulan
-"Muka lo jelek banget, nggak usah sok tampil.",1,hinaan_langsung,usulan
-"Wah pintar sekali, sampai dua kali salah dan masih bangga.",1,sindiran,usulan
-"Hebat ya, cuma bisa nyalahin orang lain kalau gagal.",1,sindiran,usulan
-Orang kayak kamu nggak pantas dapat kesempatan itu.,1,merendahkan,usulan
-"Pantesan nggak ada yang betah, kelakuanmu memang menyebalkan.",1,hinaan_langsung,usulan
-"Kamu itu cuma beban, nggak ada gunanya di tim.",1,merendahkan,usulan
-"Pulang aja, jangan bikin malu sekolah ini.",1,merendahkan,usulan
-"Dia memang pantas dijauhi, dasar tukang bikin masalah.",1,merendahkan,usulan
-"Kata-katamu kasar banget, otakmu di mana?",1,hinaan_langsung,usulan
-Kritik yang membangun: bagian akhir presentasimu masih perlu diperbaiki.,0,kritik,usulan
-"Aku nggak setuju sama pendapatmu, tapi argumenmu menarik.",0,netral,usulan
+"Dasar bodoh, kerjaan kayak gini aja nggak becus.",1,hinaan_langsung,final
+"Muka lo jelek banget, nggak usah sok tampil.",1,hinaan_langsung,final
+"Wah pintar sekali, sampai dua kali salah dan masih bangga.",1,sindiran,final
+"Hebat ya, cuma bisa nyalahin orang lain kalau gagal.",1,sindiran,final
+Orang kayak kamu nggak pantas dapat kesempatan itu.,1,merendahkan,final
+"Pantesan nggak ada yang betah, kelakuanmu memang menyebalkan.",1,hinaan_langsung,final
+"Kamu itu cuma beban, nggak ada gunanya di tim.",1,merendahkan,final
+"Pulang aja, jangan bikin malu sekolah ini.",1,merendahkan,final
+"Dia memang pantas dijauhi, dasar tukang bikin masalah.",1,merendahkan,final
+"Kata-katamu kasar banget, otakmu di mana?",1,hinaan_langsung,final
+Kritik yang membangun: bagian akhir presentasimu masih perlu diperbaiki.,0,kritik,final
+"Aku nggak setuju sama pendapatmu, tapi argumenmu menarik.",0,netral,final
 "Dasar bodoh, tapi itu becandaan kita berdua ya.",0,kasar_akrab,usulan
-"Semangat terus, besok pasti lebih baik!",0,netral,usulan
-"Maaf ya, tadi aku salah paham. Sudah kuperbaiki.",0,netral,usulan
-"Pemerintah perlu memperbaiki layanan publik, ini masalah serius.",0,kritik,usulan
-"Filmnya biasa saja, endingnya kurang greget.",0,opini,usulan
-"Aku capek banget hari ini, pengen tidur.",0,netral,usulan
-"Kamu lucu kalau lagi marah, jangan diambil hati ya.",0,kasar_akrab,usulan
-"Kualitas produk ini mengecewakan, saya minta refund.",0,keluhan,usulan
-"Wah, berani banget ya pakai baju itu dengan bentuk badan begitu, salut sama percaya dirinya",1,pujian_menyindir,usulan
-"Baju itu cocok, sayang bentuk tubuhmu kurang mendukung.",1,pujian_menyindir,usulan
-Kamu berani tampil percaya diri walaupun badannya begitu.,1,pujian_menyindir,usulan
-"Penampilanmu rapi, sayang proporsinya kurang pas.",1,pujian_menyindir,usulan
-"Presentasinya oke, walau isinya banyak yang keliru.",1,pujian_menyindir,usulan
-"Gaya kamu mewah, sayang posturnya belum ideal.",1,pujian_menyindir,usulan
-"Bagus banget editannya, kayak tugas anak SD baru belajar pakai aplikasi",1,sarkasme_karya,usulan
+"Semangat terus, besok pasti lebih baik!",0,netral,final
+"Maaf ya, tadi aku salah paham. Sudah kuperbaiki.",0,netral,final
+"Pemerintah perlu memperbaiki layanan publik, ini masalah serius.",0,kritik,final
+"Filmnya biasa saja, endingnya kurang greget.",0,opini,final
+"Aku capek banget hari ini, pengen tidur.",0,netral,final
+"Kamu lucu kalau lagi marah, jangan diambil hati ya.",0,netral,final
+"Kualitas produk ini mengecewakan, saya minta refund.",0,keluhan,final
+"Wah, berani banget ya pakai baju itu dengan bentuk badan begitu, salut sama percaya dirinya",1,pujian_menyindir,final
+"Baju itu cocok, sayang bentuk tubuhmu kurang mendukung.",1,pujian_menyindir,final
+Kamu berani tampil percaya diri walaupun badannya begitu.,1,pujian_menyindir,final
+"Penampilanmu rapi, sayang proporsinya kurang pas.",1,pujian_menyindir,final
+"Presentasinya oke, walau isinya banyak yang keliru.",0,kritik,final
+"Gaya kamu mewah, sayang posturnya belum ideal.",1,pujian_menyindir,final
+"Bagus banget editannya, kayak tugas anak SD baru belajar pakai aplikasi",1,sarkasme_karya,final
 "Karyamu keren, kayak hasil latihan pertama.",1,sarkasme_karya,usulan
-"Desainnya menarik, sayang warnanya bikin pusing.",1,sarkasme_karya,usulan
+"Desainnya menarik, sayang warnanya bikin pusing.",0,kritik,final
 "Presentasimu bagus, butuh berbulan-bulan ya?",1,sarkasme_karya,usulan
-"Tulisanmu rapi, tapi isinya nggak nyambung.",1,sarkasme_karya,usulan
+"Tulisanmu rapi, tapi isinya nggak nyambung.",0,kritik,final
 Ini hasil kerjamu? Serius?,1,sarkasme_karya,usulan
 "Gitu aja baper, cuma bercanda kali. Main medsos kok sensitif amat",1,gaslighting,usulan
 "Baru dikritik sedikit kok marah, cuma bercanda.",1,gaslighting,usulan
 "Kamu terlalu sensitif, aku cuma jujur.",1,gaslighting,usulan
 "Nggak usah baper, bercanda itu biasa.",1,gaslighting,usulan
 "Jangan drama, aku cuma nyindir.",1,gaslighting,usulan
-"Kamu yang salah paham, aku nggak bermaksud buruk.",1,gaslighting,usulan
-"Ada ya orang yang gayanya selangit tapi aslinya nggak punya apa-apa, kasihan",1,subtweet,usulan
-"Ada orang sok sibuk, hasilnya nol, kasihan.",1,subtweet,usulan
-"Nggak sebut nama, tapi yang hobi nyalahin orang pasti paham.",1,subtweet,usulan
-"Ada yang mengaku paling paham, padahal pertanyaan dasar saja bingung.",1,subtweet,usulan
-"Orang tertentu sok profesional, tapi hasil kerjanya berantakan.",1,subtweet,usulan
-"Ada ya yang gayanya tinggi, isinya kosong.",1,subtweet,usulan
-"Makin makmur aja nih sekarang, hati-hati loh nanti susah cari ukuran baju",1,body_shaming,usulan
-"Badanmu makin lebar, mirip balon.",1,body_shaming,usulan
-"Perutmu makin membesar, coba olahraga.",1,body_shaming,usulan
+"Kamu yang salah paham, aku nggak bermaksud buruk.",0,netral,final
+"Ada ya orang yang gayanya selangit tapi aslinya nggak punya apa-apa, kasihan",1,subtweet,final
+"Ada orang sok sibuk, hasilnya nol, kasihan.",1,subtweet,final
+"Nggak sebut nama, tapi yang hobi nyalahin orang pasti paham.",1,subtweet,final
+"Ada yang mengaku paling paham, padahal pertanyaan dasar saja bingung.",1,subtweet,final
+"Orang tertentu sok profesional, tapi hasil kerjanya berantakan.",1,subtweet,final
+"Ada ya yang gayanya tinggi, isinya kosong.",1,subtweet,final
+"Makin makmur aja nih sekarang, hati-hati loh nanti susah cari ukuran baju",1,body_shaming,final
+"Badanmu makin lebar, mirip balon.",1,body_shaming,final
+"Perutmu makin membesar, coba olahraga.",1,body_shaming,final
 "Berat badanmu naik terus, bahaya buat kesehatan.",1,body_shaming,usulan
-"Kamu makin berisi, susah cari ukuran baju.",1,body_shaming,usulan
-"Lenganmu makin besar, kurangi ngemil.",1,body_shaming,usulan
+"Kamu makin berisi, susah cari ukuran baju.",1,body_shaming,final
+"Lenganmu makin besar, kurangi ngemil.",1,body_shaming,final

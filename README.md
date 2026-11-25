@@ -18,7 +18,7 @@ tantangan sindiran tanpa kata kasar.
 | Frontend `interface/` | Selesai; `npm install` sebelum `npm run dev` |
 | Notebook 00–06, 99 | Selesai; butuh data/model untuk dijalankan |
 | Augmentasi sintetis | 20k bertarget sudah dibuat; `train_augmented` 30.397 baris siap |
-| Eval set manual | 50 contoh **usulan**, belum final (target ≥200) |
+| Eval set manual | 40 `final`, 10 `usulan` (target ≥200) |
 | Test set | A: F1 **0,925** (threshold 0,42). B2: tercatat 0,919 pada 0,05; threshold deploy 0,5 belum di-test ulang |
 | Laporan `99_report` | Template berisi hasil referensi; B2 belum masuk laporan |
 
@@ -44,6 +44,18 @@ Catatan kualitatif: B2 mendeteksi kelima contoh sulit (subtweet, backhanded,
 sarkasme karya, gaslighting, body shaming) dengan p≈1,0, sedangkan A gagal.
 Tetapi B2 juga lebih rendah pada F1 validation/test agregat. Ini trade-off yang
 harus dilaporkan, bukan disembunyikan.
+
+## Eval set manual (40 baris final)
+
+| Model | Threshold | Accuracy | Precision bully | Recall bully | F1 bully |
+|---|---:|---:|---:|---:|---:|
+| IndoBERT A — real-only | 0,42 | 0,500 | 1,000 | 0,259 | 0,412 |
+| IndoBERT B2 — asli + sintetis | 0,50 | 0,850 | 0,839 | 0,963 | 0,897 |
+
+B2 unggul pada pujian menyindir, body shaming, sarkasme karya, dan subtweet
+(akurasi 1,0), tetapi lebih banyak false positive pada kritik dan netral.
+Gaslighting belum masuk hitungan karena 5 barisnya masih `usulan`. Sepuluh baris
+usulan lain juga belum dihitung; jangan menyebut ini angka final seluruh eval set.
 
 ## Augmentasi data sintetis
 
@@ -156,7 +168,7 @@ data/raw/         dataset asli (gitignored)
 data/processed/   train/val/test.csv + train_augmented.csv (gitignored)
 data/synthetic/   data sintetis train (gitignored)
 data/eval/        eval set manual + 50 usulan (di-commit)
-agent/            skills.md + memory.md
+agent/            skills.md, memory.md, referensi desain
 models/           checkpoint (gitignored)
 out/              metrik & artefak run (gitignored)
 tests/            pytest

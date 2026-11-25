@@ -68,15 +68,15 @@ cd interface && npm run dev
   dipakai API.
 - `models/indobert_aug` — model B2, threshold `0.5`; mendeteksi lima kategori
   sulit, tetapi F1 agregat lebih rendah dari A.
-- `out/model_a` dan `out/model_b` — metrik A/B2; test B2 tercatat pada threshold
-  0,05 sebelum policy diubah.
+- `out/model_a` dan `out/model_b` — metrik A/B2. Eval set 40 final: A F1 0,412;
+  B2 F1 0,897. Test B2 tercatat pada threshold 0,05 sebelum policy diubah.
 - `data/synthetic/synthetic_train.csv` — 20.000 baris (14k positif / 6k hard
   negative), termasuk pujian menyindir, sarkasme karya, gaslighting, subtweet,
   body shaming.
 - `data/processed/train_augmented.csv` — 30.397 baris (10.397 real + 20k
   synthetic), sudah dipakai training B2.
-- `data/eval/implicit_eval.csv` — 50 usulan (20 lama + 30 kategori sulit);
-  `evaluate.py` melewati semua baris `usulan`.
+- `data/eval/implicit_eval.csv` — 40 final + 10 usulan; gaslighting masih usulan.
+  `evaluate.py` melewati baris `usulan`.
 - Test A sudah dievaluasi pada 0,42; B2 tercatat pada 0,05. Threshold deploy B2
   sekarang 0,5; test pada 0,5 tidak dijalankan ulang.
 - B2/A dapat dijalankan di API; `threshold.json` di folder model menentukan label.
@@ -95,6 +95,8 @@ cd interface && npm run dev
 ## Konvensi repo
 
 - Frontend di `interface/` (Vite + React + TypeScript strict), bukan `frontend/`.
+  Desain mengikuti `agent/design.md`, `agent/DESIGN_GUIDE.md`, dan
+  `agent/globals.css` (Geist, monokrom, sidebar, light/dark).
 - `agent/skills.md` dan `agent/memory.md` di-commit; perbarui `memory.md` di
   akhir sesi.
 - Semua path lewat `cyberbully.config`; jangan hardcode path absolut.
