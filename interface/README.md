@@ -1,6 +1,9 @@
 # Interface — CyberBully
 
 Frontend demo untuk API deteksi cyberbullying. Vite + React + TypeScript strict.
+Desain mengikuti `agent/design.md`, `agent/DESIGN_GUIDE.md`, dan
+`agent/globals.css`: Geist Sans/Mono, chrom monokrom, sidebar desktop, drawer
+mobile, light/dark, panel hasil flat, dan tombol ink.
 
 ## Menjalankan
 
