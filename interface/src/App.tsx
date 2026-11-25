@@ -55,8 +55,8 @@ function ResultPanel({
       </div>
 
       <p className="fineprint">
-        Label mengikuti ambang model ini. Angka adalah probabilitas kelas bully,
-        bukan kepastian pelanggaran.
+        Label mengikuti ambang model ini ({Math.round(result.threshold * 100)}%).
+        Angka adalah probabilitas kelas bully, bukan kepastian pelanggaran.
       </p>
     </article>
   )

@@ -47,10 +47,13 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.predictors: dict[str, PredictorLike] = {}
+        app.state.thresholds: dict[str, float | None] = {}
         app.state.model_errors: dict[str, str] = {}
         for key, path in resolved_dirs.items():
             try:
-                app.state.predictors[key] = predictor_factory(path)
+                predictor = predictor_factory(path)
+                app.state.predictors[key] = predictor
+                app.state.thresholds[key] = getattr(predictor, "threshold", None)
             except (FileNotFoundError, OSError, ValueError, RuntimeError) as exc:
                 app.state.model_errors[key] = str(exc)
         yield
@@ -77,15 +80,26 @@ def create_app(
             )
         return predictor
 
+    def _response(key: str, text: str) -> PredictResponse:
+        predictor = _predictor(key)
+        result = predictor.predict(text)
+        threshold = app.state.thresholds.get(key)
+        return PredictResponse(
+            **result,
+            threshold=0.5 if threshold is None else float(threshold),
+        )
+
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
-        models = {
-            key: key in app.state.predictors for key in resolved_dirs
+        models = {key: key in app.state.predictors for key in resolved_dirs}
+        thresholds = {
+            key: app.state.thresholds.get(key) for key in resolved_dirs
         }
         return HealthResponse(
             status="ok",
             model_loaded=any(models.values()),
             models=models,
+            thresholds=thresholds,
         )
 
     @app.post("/predict", response_model=PredictResponse)
@@ -93,8 +107,7 @@ def create_app(
         payload: PredictRequest,
         model: Literal["a", "b"] = Query(default="a"),
     ) -> PredictResponse:
-        result = _predictor(model).predict(payload.text)
-        return PredictResponse(**result)
+        return _response(model, payload.text)
 
     @app.post("/compare", response_model=CompareResponse)
     def compare(payload: PredictRequest) -> CompareResponse:
@@ -108,8 +121,8 @@ def create_app(
                 ),
             )
         return CompareResponse(
-            a=PredictResponse(**app.state.predictors["a"].predict(payload.text)),
-            b=PredictResponse(**app.state.predictors["b"].predict(payload.text)),
+            a=_response("a", payload.text),
+            b=_response("b", payload.text),
         )
 
     return app

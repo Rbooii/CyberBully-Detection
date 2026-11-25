@@ -11,6 +11,7 @@ class FakePredictor:
             raise FileNotFoundError(model_dir)
         self.model_dir = model_dir
         self.probability = 0.9 if "real" in model_dir.name else 0.2
+        self.threshold = 0.42 if "real" in model_dir.name else 0.17
 
     def predict(self, text: str) -> dict[str, float | str]:
         label = "bully" if self.probability >= 0.5 else "non-bully"
@@ -35,6 +36,7 @@ def test_health_without_models(tmp_path) -> None:
             "status": "ok",
             "model_loaded": False,
             "models": {"a": False, "b": False},
+            "thresholds": {"a": None, "b": None},
         }
 
 
@@ -64,6 +66,7 @@ def test_compare_returns_both_models(tmp_path) -> None:
         health = client.get("/health").json()
         assert health["model_loaded"] is True
         assert health["models"] == {"a": True, "b": True}
+        assert health["thresholds"] == {"a": 0.42, "b": 0.17}
 
         response = client.post("/compare", json={"text": "dasar bodoh"})
         assert response.status_code == 200
@@ -72,6 +75,8 @@ def test_compare_returns_both_models(tmp_path) -> None:
         assert body["b"]["label"] == "non-bully"
         assert body["a"]["bully_probability"] == 0.9
         assert body["b"]["bully_probability"] == 0.2
+        assert body["a"]["threshold"] == 0.42
+        assert body["b"]["threshold"] == 0.17
 
         single = client.post("/predict?model=b", json={"text": "dasar bodoh"})
         assert single.status_code == 200
@@ -90,6 +95,7 @@ def test_compare_requires_both_models(tmp_path) -> None:
     with TestClient(app) as client:
         health = client.get("/health").json()
         assert health["models"] == {"a": True, "b": False}
+        assert health["thresholds"] == {"a": 0.42, "b": None}
 
         assert client.post("/predict?model=b", json={"text": "halo"}).status_code == 503
         assert client.post("/compare", json={"text": "halo"}).status_code == 503

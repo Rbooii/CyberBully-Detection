@@ -29,7 +29,7 @@ ikut ter-bundle ke browser.
 
 - Tombol `Bandingkan teks` mengirim `POST /compare` dengan `{ "text": ... }`.
 - Hasil menampilkan dua panel: Model A (data asli) dan Model B (asli + sintetis),
-  masing-masing label, probabilitas bully, dan bar.
+  masing-masing label, probabilitas bully, threshold dari file model, dan bar.
 - Selisih probabilitas B − A ditampilkan sebagai informasi, bukan klaim pemenang.
 - Model A/B dimuat API sekali saat startup; jika salah satu belum ada,
   `/compare` mengembalikan 503 dan UI menampilkan pesan, bukan stack trace.

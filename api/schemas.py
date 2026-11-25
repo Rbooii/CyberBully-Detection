@@ -19,6 +19,7 @@ class PredictResponse(BaseModel):
     label: str
     score: float
     bully_probability: float
+    threshold: float
 
 
 class CompareResponse(BaseModel):
@@ -30,3 +31,4 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     models: dict[str, bool]
+    thresholds: dict[str, float | None]

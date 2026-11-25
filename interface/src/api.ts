@@ -4,6 +4,7 @@ export interface Prediction {
   label: PredictionLabel
   score: number
   bully_probability: number
+  threshold: number
 }
 
 export interface Comparison {
