@@ -62,8 +62,18 @@ def choose_threshold(
     start: float = 0.05,
     stop: float = 0.95,
     step: float = 0.01,
-) -> dict[str, float | dict[str, float | int | list[list[int]]]]:
-    """Cari threshold dengan F1 bully terbaik pada validation set."""
+    default: float = 0.5,
+    min_gain: float = 0.002,
+) -> dict[str, object]:
+    """Pilih threshold validation; fallback ke default bila optimum tidak stabil.
+
+    Threshold yang mentok di batas grid atau hanya menang sangat tipis tidak
+    dipakai karena rawan menjadi artefak pemilihan, bukan operating point nyata.
+    """
+    if not 0.0 < default < 1.0:
+        raise ValueError("default threshold harus di antara 0 dan 1")
+
+    default_metrics = binary_metrics(labels, probabilities, threshold=default)
     best_threshold = start
     best_metrics = binary_metrics(labels, probabilities, threshold=start)
 
@@ -73,4 +83,34 @@ def choose_threshold(
             best_threshold = float(threshold)
             best_metrics = metrics
 
-    return {"threshold": best_threshold, "metrics": best_metrics}
+    at_boundary = best_threshold <= start + 1e-9 or best_threshold >= stop - 1e-9
+    gain = float(best_metrics["f1_bully"]) - float(default_metrics["f1_bully"])
+
+    fallback = None
+    if at_boundary:
+        fallback = "boundary"
+    elif gain < min_gain:
+        fallback = "small_gain"
+
+    if fallback:
+        return {
+            "threshold": default,
+            "metrics": default_metrics,
+            "fallback": fallback,
+            "best_candidate": {
+                "threshold": best_threshold,
+                "metrics": best_metrics,
+                "gain_over_default": gain,
+            },
+        }
+
+    return {
+        "threshold": best_threshold,
+        "metrics": best_metrics,
+        "fallback": None,
+        "best_candidate": {
+            "threshold": best_threshold,
+            "metrics": best_metrics,
+            "gain_over_default": gain,
+        },
+    }

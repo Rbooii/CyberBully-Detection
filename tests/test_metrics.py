@@ -36,8 +36,17 @@ def test_probabilities_from_logits_matches_softmax() -> None:
 
 
 def test_choose_threshold_improves_over_default() -> None:
-    labels = [1, 1, 0]
-    probabilities = [0.4, 0.9, 0.45]
+    labels = [1, 1, 0, 0]
+    probabilities = [0.7, 0.6, 0.55, 0.3]
     result = choose_threshold(labels, probabilities)
-    assert result["metrics"]["f1_bully"] > 0.7
-    assert result["threshold"] <= 0.45
+    assert result["metrics"]["f1_bully"] > 0.9
+    assert 0.5 < result["threshold"] < 0.7
+    assert result["fallback"] is None
+
+
+def test_choose_threshold_falls_back_at_grid_boundary() -> None:
+    labels = [1, 1, 0, 0]
+    probabilities = [0.02, 0.03, 0.0, 0.01]
+    result = choose_threshold(labels, probabilities)
+    assert result["threshold"] == 0.5
+    assert result["fallback"] == "boundary"
