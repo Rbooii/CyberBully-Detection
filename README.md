@@ -6,6 +6,7 @@ tantangan sindiran tanpa kata kasar.
 
 **Panduan lengkap dari nol:** [`docs/guide.md`](docs/guide.md).
 **Full training Colab A/B:** [`docs/colab_full_training.md`](docs/colab_full_training.md).
+**Laporan pipeline (DOCX):** [`docs/laporan_pipeline_cyberbullying.docx`](docs/laporan_pipeline_cyberbullying.docx) — sumber Markdown dan builder ada di `docs/laporan_pipeline.md` dan `scripts/build_report.py`.
 
 ## Status
 
@@ -20,7 +21,8 @@ tantangan sindiran tanpa kata kasar.
 | Augmentasi sintetis | 20k bertarget sudah dibuat; `train_augmented` 30.397 baris siap |
 | Eval set manual | 40 `final`, 10 `usulan` (target ≥200) |
 | Test set | A: F1 **0,925** (threshold 0,42). B2: tercatat 0,919 pada 0,05; threshold deploy 0,5 belum di-test ulang |
-| Laporan `99_report` | Template berisi hasil referensi; B2 belum masuk laporan |
+| Laporan `99_report` | Template berisi validation, test, eval set, dan grafik; keputusan model belum final |
+| Laporan DOCX | Selesai: 7 grafik dari data asli, format arXiv satu kolom, Times New Roman |
 
 B2 dilatih dengan 20k sintetis bertarget. Pada uji manual lima kategori sulit,
 B2 memberi p≈1,0 untuk semuanya; A masih 0,002–0,11. Namun F1 validation B2
@@ -52,8 +54,8 @@ harus dilaporkan, bukan disembunyikan.
 | IndoBERT A — real-only | 0,42 | 0,500 | 1,000 | 0,259 | 0,412 |
 | IndoBERT B2 — asli + sintetis | 0,50 | 0,850 | 0,839 | 0,963 | 0,897 |
 
-B2 unggul pada pujian menyindir, body shaming, sarkasme karya, dan subtweet
-(akurasi 1,0), tetapi lebih banyak false positive pada kritik dan netral.
+B2 unggul pada pujian menyindir, body shaming, sarkasme karya, sindiran, dan
+subtweet (akurasi 1,0), tetapi lebih banyak false positive pada kritik dan netral.
 Gaslighting belum masuk hitungan karena 5 barisnya masih `usulan`. Sepuluh baris
 usulan lain juga belum dihitung; jangan menyebut ini angka final seluruh eval set.
 

@@ -29,6 +29,9 @@ out/*
 node_modules/
 interface/dist/
 
+# Build tools lokal (Pandoc)
+.tools/
+
 # Secrets & OS
 .env
 .env.*

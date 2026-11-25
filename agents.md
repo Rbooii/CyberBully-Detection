@@ -245,7 +245,8 @@ Dilarang tanpa izin eksplisit:
 - [ ] Eval set manual ≥ 200 contoh (40 final, 10 usulan)
 - [ ] Error analysis selesai (notebook siap; final setelah eval set)
 - [x] API + frontend demo dua model (A/B) selesai; threshold per model
-- [ ] `99_report` terisi (template sudah memuat validation; test belum final)
+- [ ] `99_report` terisi (template sudah memuat validation, test, eval set, dan grafik)
+- [x] Laporan DOCX pipeline selesai (arXiv satu kolom, 7 grafik, Times New Roman)
 
 Catatan 2026-11-25: B2 unggul di eval set manual (F1 0,897 vs A 0,412) dan
 mendeteksi lima kategori sulit, tetapi F1 agregat validation lebih rendah dari A.

@@ -400,3 +400,34 @@ di bawah. Aturan kerja ada di `agents.md`, cara operasional di `agent/skills.md`
 1. Review 10 usulan tersisa, terutama gaslighting; evaluasi ulang eval set.
 2. Pilih model utama sesuai tujuan proyek dan tulis trade-off.
 3. Isi `99_report`, update README, commit/push.
+
+
+## 2026-11-25 — Laporan DOCX pipeline
+
+**Keputusan**
+
+- Laporan dibuat sebagai DOCX satu kolom bergaya arXiv, tanpa cover, Times New
+  Roman 10,5 pt, margin 1,8 cm, dan rumus LaTeX dikonversi ke Word equation.
+- Sumber teks `docs/laporan_pipeline.md`; builder `scripts/build_report.py`;
+  grafik di `docs/figures/`; output `docs/laporan_pipeline_cyberbullying.docx`.
+- Angka utama diambil dari `data/processed`, `out/model_a`, dan `out/model_b`;
+  baseline memakai angka run yang tercatat di README.
+- Tujuh grafik: pipeline, label/split, panjang teks, kurva threshold,
+  validation/test, akurasi per kategori, dan screenshot frontend.
+
+**Catatan teknis**
+
+- `pypandoc_binary` berisi Pandoc x86_64 dan gagal di arm64. Solusinya mengunduh
+  rilis resmi `pandoc-3.14-arm64-macOS.zip` ke `.tools/` (gitignored); builder
+  mendeteksi PATH, `.tools`, lalu mengunduh bila perlu.
+- `python-docx` dipakai untuk reference style, margin, tabel, nomor halaman, dan
+  validasi OMML/gambar.
+- Quick Look macOS merender lebar tabel lebih kecil dari XML; lebar grid dan
+  `tblW` sudah benar, tetapi layout akhir di Word belum bisa diverifikasi di
+  mesin ini. Ini keterbatasan yang harus disebut.
+
+**Terbuka**
+
+- Eval set masih 40 final + 10 usulan; gaslighting belum terukur.
+- Keputusan model utama (A vs B2) belum ditetapkan.
+- Layout halaman di Microsoft Word belum dicek secara visual.

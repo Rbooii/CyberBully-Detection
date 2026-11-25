@@ -1,7 +1,10 @@
 # Panduan Lengkap dari Nol
 
 Panduan ini menuntun dari repo kosong sampai model, API, frontend, dan laporan
-bisa dijalankan. Ditulis untuk pembaca yang baru belajar ML/NLP: setiap perintah
+bisa dijalankan. Laporan siap dibaca ada di
+`docs/laporan_pipeline_cyberbullying.docx`; sumbernya `docs/laporan_pipeline.md`
+dan dibangun ulang dengan `python scripts/build_report.py`. Ditulis untuk pembaca
+yang baru belajar ML/NLP: setiap perintah
 dijelaskan tujuannya, output yang diharapkan, dan cara menangani kegagalan umum.
 
 Model dan artefak turunan **sengaja dihapus** dari repo lokal. Semua langkah di
